@@ -1,8 +1,8 @@
-from linear_regression import gradient_descent, compute_cost, compute_gradient
+from linear_regression import gradient_descent, compute_cost, compute_gradient, compute_reg_gradient
 import numpy as np
 import matplotlib.pyplot as plt
 
-def generate_polynomial_data(m, degree, noise_std=1.0, seed=0):
+def generate_polynomial_data(m, degree, noise_std=15.0, seed=0):
     """
     Generates synthetic data with polynomial relationship y = a0 + a1*x + a2*x^2 + ... + an*x^n + noise
 
@@ -18,17 +18,16 @@ def generate_polynomial_data(m, degree, noise_std=1.0, seed=0):
         true_coefs (ndarray (degree+1,)): Coefficients used to generate y
     """
     np.random.seed(seed)
-    # Generate input X uniformly between 0 and 2
     X_orig = 2 * np.random.rand(m)
     
-    # Random coefficients for polynomial of degree 'degree' (including intercept)
-    true_coefs = np.random.randn(degree + 1) * 2
-    
-    # Compute y = a0 + a1*x + a2*x^2 + ... + noise
+    # Force high-degree coefficients to be large
+    true_coefs = np.array([np.random.randn() * (1 if i < 2 else 10) for i in range(degree + 1)])
+
     y = np.zeros(m)
     for i, coef in enumerate(true_coefs):
         y += coef * (X_orig ** i)
-    y += np.random.randn(m) * noise_std  # add noise
+    # y = np.clip(y, -1e4, 1e4)
+    y += np.random.randn(m) * noise_std
     
     return X_orig, y, true_coefs
 
@@ -61,9 +60,9 @@ def zscore_normalize_features(X):
 
 if __name__ == "__main__":
     # Parameters
-    m = 100
-    degree = 10
-    noise_std = 0.8
+    m = 5
+    degree = 14
+    noise_std = 1000
 
     # Generate data and coefficients
     X_orig, y, true_coefs = generate_polynomial_data(m, degree, noise_std)
@@ -72,41 +71,31 @@ if __name__ == "__main__":
     X_poly = prepare_poly_features(X_orig, degree)
 
     # Normalize polynomial features
-    X_poly_norm, mu, sigma = zscore_normalize_features(X_poly)
+    # X_poly_norm, mu, sigma = zscore_normalize_features(X_poly)
+    X_poly_norm = X_poly
 
     # Initialize weights and bias
-    w_init = np.zeros(X_poly.shape[1]) 
+    w_init = np.zeros(X_poly_norm.shape[1])
     b_init = 0.0
-    alpha = 1.0e-2
-    num_iters = 20000
+    alpha = 1e-5
+    num_iters = 100000
 
     # Run gradient descent
     w, b, J_hist, p_hist = gradient_descent(
-        X_poly_norm, y, w_init, b_init, alpha, num_iters, compute_cost, compute_gradient
+        X_poly_norm, y, w_init, b_init, alpha, num_iters, compute_cost, compute_gradient,
+        (lambda w, X: compute_reg_gradient(w, X, 10))
     )
     print(f"Gradient descent result:\n w = {w}\n b = {b:.3f}")
 
-    # Plot training loss
-    fig, (ax1, ax2) = plt.subplots(1, 2, constrained_layout=True, figsize=(12, 4))
-    ax1.plot(J_hist[:100])
-    ax2.plot(1000 + np.arange(len(J_hist[1000:])), J_hist[1000:])
-    ax1.set_title("Cost vs. iteration (start)"); ax2.set_title("Cost vs. iteration (end)")
-    ax1.set_ylabel('Cost'); ax2.set_ylabel('Cost')
-    ax1.set_xlabel('Iteration'); ax2.set_xlabel('Iteration')
-    plt.show()
-
-    # Plot the fitted curve
-    X_plot = np.linspace(0, 2, 100)
+    # Plot predictions
+    X_plot = np.linspace(X_orig.min(), X_orig.max(), 300)
     X_plot_poly = prepare_poly_features(X_plot, degree)
-    X_plot_poly_norm = (X_plot_poly - mu) / sigma
-    y_pred = X_plot_poly_norm @ w + b
+    y_pred = X_plot_poly @ w + b
 
     plt.figure(figsize=(8, 6))
-    plt.scatter(X_orig, y, label="Training data", alpha=0.7)
-    plt.plot(X_plot, y_pred, color="red", label="Polynomial fit")
-    plt.xlabel("x")
-    plt.ylabel("y")
-    plt.title(f"Polynomial Regression Fit (degree={degree})")
+    plt.scatter(X_orig, y, label="Training data", color='blue')
+    plt.plot(X_plot, y_pred, label="Overfit model", color='red')
     plt.legend()
+    plt.title("Intentional Overfitting (No Normalization)")
     plt.grid(True)
     plt.show()

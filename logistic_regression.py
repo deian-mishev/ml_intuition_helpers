@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 def sigmoid(z):
+    z = np.clip(z, -500, 500)  # clip to prevent overflow
     return 1 / (1 + np.exp(-z))
 
 def compute_cost_logistic_sq_err(X, y, w, b):
@@ -16,12 +17,9 @@ def compute_cost_logistic_sq_err(X, y, w, b):
       cost (scalar): cost
     """
     m = X.shape[0]
-    cost = 0.0
-    for i in range(m):
-        z_i = np.dot(X[i],w) + b
-        f_wb_i = sigmoid(z_i)                 #add sigmoid to normal sq error cost for linear regression
-        cost = cost + (f_wb_i - y[i])**2
-    cost = cost / (2 * m)
+    z = X @ w + b              # shape (m,)
+    f_wb = sigmoid(z)          # shape (m,)
+    cost = np.mean((f_wb - y) ** 2) / 2
     return np.squeeze(cost)
 
 def compute_gradient_logistic(X, y, w, b): 
@@ -37,19 +35,14 @@ def compute_gradient_logistic(X, y, w, b):
       dj_dw (ndarray (n,)): The gradient of the cost w.r.t. the parameters w. 
       dj_db (scalar)      : The gradient of the cost w.r.t. the parameter b. 
     """
-    m,n = X.shape
-    dj_dw = np.zeros((n,))                           #(n,)
-    dj_db = 0.
+    m = X.shape[0]
+    z = X @ w + b              # shape (m,)
+    f_wb = sigmoid(z)          # shape (m,)
+    error = f_wb - y           # shape (m,)
+    
+    dj_dw = (X.T @ error) / m  # shape (n,)
+    dj_db = np.sum(error) / m  # scalar
 
-    for i in range(m):
-        f_wb_i = sigmoid(np.dot(X[i],w) + b)          #(n,)(n,)=scalar
-        err_i  = f_wb_i  - y[i]                       #scalar
-        for j in range(n):
-            dj_dw[j] = dj_dw[j] + err_i * X[i,j]      #scalar
-        dj_db = dj_db + err_i
-    dj_dw = dj_dw/m                                   #(n,)
-    dj_db = dj_db/m                                   #scalar
-        
     return dj_dw, dj_db
 
 
