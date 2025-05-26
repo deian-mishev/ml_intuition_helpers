@@ -2,6 +2,7 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 
+
 def compute_reg_gradient(w, X, lambda_=1):
     """
     Computes the L2 regularization cost over all weights
@@ -17,6 +18,7 @@ def compute_reg_gradient(w, X, lambda_=1):
     m = X.shape[0]
     reg_gradient = (lambda_ / m) * w
     return reg_gradient
+
 
 def compute_cost(X, y, w, b):
     """
@@ -47,10 +49,10 @@ def compute_gradient(X, y, w, b):
         dj_db (scalar): The gradient of the cost w.r.t. the parameter b     
     """
     m = X.shape[0]
-    f_wb = X @ w + b  # shape (m,)
-    error = f_wb - y  # shape (m,)
-    dj_dw = (X.T @ error) / m  # shape (n,)
-    dj_db = np.sum(error) / m  # scalar
+    f_wb = X @ w + b
+    error = f_wb - y
+    dj_dw = (X.T @ error) / m
+    dj_db = np.sum(error) / m
     return dj_dw, dj_db
 
 
@@ -76,16 +78,16 @@ def gradient_descent(X, y, w, b, alpha, num_iters,
         J_history (List): History of cost values
         p_history (list): History of parameters [w,b] 
     """
-    reg_value = regularization if regularization is not None else (lambda w, X: 0)
+    reg_value = regularization if regularization is not None else (
+        lambda w, X: 0)
 
     J_history = []
     p_history = []
 
     for i in range(num_iters):
-        dj_dw_loss, dj_db = gradient_function(X, y, w, b)
-        dj_dw = dj_dw_loss + reg_value(w, X)
-        # Update parameters
-        w -= alpha * dj_dw
+        dj_dw, dj_db = gradient_function(X, y, w, b)
+
+        w -= alpha * (dj_dw + reg_value(w, X))
         b -= alpha * dj_db
 
         if i < 100000:
