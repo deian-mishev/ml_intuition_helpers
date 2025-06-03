@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from data.data import generate_tree_viz
 
+
 def entropy(p):
     if p == 0 or p == 1:
         return 0
@@ -58,6 +59,23 @@ def compute_entropy(y):
         return -entropy*np.log2(entropy) - (1-entropy)*np.log2(1-entropy)
 
 
+def split_dataset_continuous(X, node_indices, feature, threshold):
+    left_indices = []
+    right_indices = []
+    for i in node_indices:
+        if X[i][feature] <= threshold:
+            left_indices.append(i)
+        else:
+            right_indices.append(i)
+    return left_indices, right_indices
+
+
+def get_potential_splits(X, node_indices, feature):
+    values = sorted(set([X[i][feature] for i in node_indices]))
+    thresholds = [(values[i] + values[i+1])/2 for i in range(len(values)-1)]
+    return thresholds
+
+
 def split_dataset(X, node_indices, feature):
     left_indices = []
     right_indices = []
@@ -94,53 +112,72 @@ def compute_information_gain(X, y, node_indices, feature):
 
 def get_best_split(X, y, node_indices):
     num_features = X.shape[1]
-
     best_feature = -1
+    best_threshold = None
+    max_info_gain = -float("inf")
 
-    max_info_gain = 0
     for feature in range(num_features):
-        info_gain = compute_information_gain(X, y, node_indices, feature)
-        if info_gain > max_info_gain:
-            max_info_gain = info_gain
-            best_feature = feature
-    return best_feature
+        thresholds = get_potential_splits(X, node_indices, feature)
+
+        for threshold in thresholds:
+            left_indices, right_indices = split_dataset_continuous(X, node_indices, feature, threshold)
+            if len(left_indices) == 0 or len(right_indices) == 0:
+                continue
+
+            X_node = X[node_indices]
+            y_node = y[node_indices]
+            y_left = y[left_indices]
+            y_right = y[right_indices]
+
+            node_entropy = compute_entropy(y_node)
+            left_entropy = compute_entropy(y_left)
+            right_entropy = compute_entropy(y_right)
+
+            w_left = len(y_left) / len(y_node)
+            w_right = len(y_right) / len(y_node)
+            weighted_entropy = w_left * left_entropy + w_right * right_entropy
+            info_gain = node_entropy - weighted_entropy
+
+            if info_gain > max_info_gain:
+                max_info_gain = info_gain
+                best_feature = feature
+                best_threshold = threshold
+
+    return best_feature, best_threshold
 
 
 def build_tree_recursive(X, y, node_indices, branch_name, max_depth, current_depth, tree):
-    if current_depth == max_depth:
-        formatting = " "*current_depth + "-"*current_depth
-        print(formatting, "%s leaf node with indices" %
-              branch_name, node_indices)
+    if current_depth == max_depth or len(set(y[node_indices])) == 1:
+        formatting = " " * current_depth + "-" * current_depth
+        print(formatting, "%s leaf node with indices" % branch_name, node_indices)
         return
-    best_feature = get_best_split(X, y, node_indices)
-    formatting = "-"*current_depth
-    print("%s Depth %d, %s: Split on feature: %d" %
-          (formatting, current_depth, branch_name, best_feature))
 
-    left_indices, right_indices = split_dataset(X, node_indices, best_feature)
-    tree.append((left_indices, right_indices, best_feature))
+    best_feature, best_threshold = get_best_split(X, y, node_indices)
+    formatting = "-" * current_depth
+    print(f"{formatting} Depth {current_depth}, {branch_name}: Split on feature {best_feature} at threshold {best_threshold:.2f}")
 
-    build_tree_recursive(X, y, left_indices, "Left",
-                         max_depth, current_depth+1, tree)
-    build_tree_recursive(X, y, right_indices, "Right",
-                         max_depth, current_depth+1, tree)
+    left_indices, right_indices = split_dataset_continuous(X, node_indices, best_feature, best_threshold)
+    tree.append((left_indices, right_indices, best_feature, best_threshold))
+
+    build_tree_recursive(X, y, left_indices, "Left", max_depth, current_depth + 1, tree)
+    build_tree_recursive(X, y, right_indices, "Right", max_depth, current_depth + 1, tree)
     return tree
 
 
 if __name__ == "__main__":
-    X_train = np.array([[1, 1, 1],
-                        [0, 0, 1],
-                        [0, 1, 0],
-                        [1, 0, 1],
-                        [1, 1, 1],
-                        [1, 1, 0],
-                        [0, 0, 0],
-                        [1, 1, 0],
-                        [0, 1, 0],
-                        [0, 1, 0]])
+    X_train = np.array([[1, 1, 1, 7.8],
+                        [0, 0, 1, 8.1],
+                        [0, 1, 0, 9.3],
+                        [1, 0, 1, 8.9],
+                        [1, 1, 1, 8.3],
+                        [1, 1, 0, 7.5],
+                        [0, 0, 0, 9.1],
+                        [1, 1, 0, 8.3],
+                        [0, 1, 0, 7.7],
+                        [0, 1, 0, 10.0]])
 
     y_train = np.array([1, 1, 0, 0, 1, 1, 0, 1, 0, 0])
     tree = []
     build_tree_recursive(X_train, y_train, [
-                         0, 1, 2, 3, 4, 5, 6, 7, 8, 9], "Root", max_depth=2, current_depth=0, tree=tree)
+                         0, 1, 2, 3, 4, 5, 6, 7, 8, 9], "Root", max_depth=4, current_depth=0, tree=tree)
     generate_tree_viz([0, 1, 2, 3, 4, 5, 6, 7, 8, 9], y_train, tree)
