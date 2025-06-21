@@ -1,11 +1,9 @@
 import numpy as np
 import tensorflow as tf
 from tensorflow import keras
-from tensorflow.keras.layers import Lambda
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.model_selection import train_test_split
 from data.data import load_data
-
 
 def scale_data(user_data, item_data, y_data):
     """
@@ -43,29 +41,29 @@ def build_model(num_user_features, num_item_features, num_outputs=32):
     Returns:
       model (tf.keras.Model): Compiled collaborative filtering model.
     """
-    user_NN = tf.keras.Sequential([
-        tf.keras.layers.Dense(256, activation='relu'),
-        tf.keras.layers.Dense(128, activation='relu'),
-        tf.keras.layers.Dense(num_outputs)
+    user_NN = keras.Sequential([
+        keras.layers.Dense(256, activation='relu'),
+        keras.layers.Dense(128, activation='relu'),
+        keras.layers.Dense(num_outputs)
     ])
 
-    item_NN = tf.keras.Sequential([
-        tf.keras.layers.Dense(256, activation='relu'),
-        tf.keras.layers.Dense(128, activation='relu'),
-        tf.keras.layers.Dense(num_outputs)
+    item_NN = keras.Sequential([
+        keras.layers.Dense(256, activation='relu'),
+        keras.layers.Dense(128, activation='relu'),
+        keras.layers.Dense(num_outputs)
     ])
 
-    input_user = tf.keras.layers.Input(shape=(num_user_features,))
-    input_item = tf.keras.layers.Input(shape=(num_item_features,))
+    input_user = keras.layers.Input(shape=(num_user_features,))
+    input_item = keras.layers.Input(shape=(num_item_features,))
 
     vu = user_NN(input_user)
     vm = item_NN(input_item)
 
-    vu = Lambda(lambda x: tf.linalg.l2_normalize(x, axis=1))(vu)
-    vm = Lambda(lambda x: tf.linalg.l2_normalize(x, axis=1))(vm)
+    vu = keras.layers.Lambda(lambda x: tf.linalg.l2_normalize(x, axis=1))(vu)
+    vm =keras.layers. Lambda(lambda x: tf.linalg.l2_normalize(x, axis=1))(vm)
 
-    output = tf.keras.layers.Dot(axes=1)([vu, vm])
-    model = tf.keras.Model([input_user, input_item], output)
+    output = keras.layers.Dot(axes=1)([vu, vm])
+    model = keras.Model([input_user, input_item], output)
     return model
 
 
@@ -136,8 +134,10 @@ if __name__ == "__main__":
 
     model.compile(
         optimizer=keras.optimizers.Adam(learning_rate=0.01),
-        loss=tf.keras.losses.MeanSquaredError()
+        loss=keras.losses.MeanSquaredError()
     )
 
     model.fit([user_train[:, u_s:], item_train[:, i_s:]], y_train, epochs=30)
     model.evaluate([user_test[:, u_s:], item_test[:, i_s:]], y_test)
+
+
