@@ -4,7 +4,6 @@ import logging
 from collections import deque, namedtuple
 import numpy as np
 import gymnasium as gym
-import random
 from config import *
 import utils
 
@@ -123,10 +122,10 @@ def main():
 
         if avg_points >= CUTTOFF_AVG:
             print(f"\n\nEnvironment solved in {episode} episodes!")
-            q_network.save("lunar_lander_model.h5")
+            q_network.save("./data/lunar_lander_model.h5")
             break
 
-    filename = "./lunar_lander.mp4"
+    filename = "./data/lunar_lander.mp4"
     utils.create_video(filename, env, q_network)
 
 if __name__ == "__main__":

@@ -191,15 +191,20 @@ def create_video(filename, env, q_network, fps=30):
             video. The default frame rate is 30 frames per second.  
     """
 
-    with imageio.get_writer(filename, fps=fps) as video:
+    with imageio.get_writer(filename, fps=fps, codec='libx264') as video:
         done = False
-        state = env.reset()
-        frame = env.render(mode="rgb_array")
+        state, _ = env.reset()
+        frame = env.render()
         video.append_data(frame)
+
         while not done:
-            state = np.expand_dims(state, axis=0)
-            q_values = q_network(state)
+            state_input = np.expand_dims(state, axis=0)
+            q_values = q_network(state_input)
             action = np.argmax(q_values.numpy()[0])
-            state, _, done, _ = env.step(action)
-            frame = env.render(mode="rgb_array")
+
+            next_state, reward, terminated, truncated, _ = env.step(action)
+            done = terminated or truncated
+            frame = env.render()
             video.append_data(frame)
+
+            state = next_state
