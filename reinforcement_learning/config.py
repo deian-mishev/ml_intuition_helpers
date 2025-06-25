@@ -1,0 +1,13 @@
+SEED = 0                  # seed for the pseudo-random number generator.
+MINIBATCH_SIZE = 64       # mini-batch size.
+TAU = 1e-3                # soft update parameter.
+E_DECAY = 0.995           # e-decay rate for the e-greedy policy.
+E_MIN = 0.01              # minimum ε value for the e-greedy policy.
+MEMORY_SIZE = 100_000     # size of memory buffer
+GAMMA = 0.995              # discount factor
+ALPHA = 1e-3              # learning rate
+NUM_STEPS_FOR_UPDATE = 4  # perform a learning update every C time steps
+NUM_OF_EPISODES = 2000    # maximum number of episodes
+MAX_NUM_OF_STEPS = 700    # maximum number of steps
+CUTTOFF_AVG = -120         # cuttoff escape
+NUM_P_AV = 100            # number of total points to use for averaging

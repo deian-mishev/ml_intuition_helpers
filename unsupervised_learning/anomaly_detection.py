@@ -1,6 +1,6 @@
 import numpy as np
 from data.data import load_data_multi
-from image_utils import *
+from unsupervised_learning.utils import *
 
 def compute_feature_stats(data): 
     """

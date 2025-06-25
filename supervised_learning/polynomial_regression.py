@@ -1,4 +1,4 @@
-from linear_regression import gradient_descent, compute_cost, compute_gradient, compute_reg_gradient
+from supervised_learning.linear_regression import gradient_descent, compute_cost, compute_gradient, compute_reg_gradient
 import numpy as np
 import matplotlib.pyplot as plt
 

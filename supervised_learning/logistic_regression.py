@@ -1,4 +1,4 @@
-from linear_regression import gradient_descent
+from supervised_learning.linear_regression import gradient_descent
 import matplotlib.pyplot as plt
 import numpy as np
 
