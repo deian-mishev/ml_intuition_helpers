@@ -1,6 +1,5 @@
 import random
 
-import imageio
 import numpy as np
 import tensorflow as tf
 
@@ -30,42 +29,35 @@ def check_update_conditions(t, memory_buffer):
        A boolean that will be True if conditions are met and False otherwise. 
     """
 
-    return (t + 1) % NUM_STEPS_FOR_UPDATE == 0 and len(memory_buffer) > MINIBATCH_SIZE
+    return len(memory_buffer) > MINIBATCH_SIZE and (t + 1) % NUM_STEPS_FOR_UPDATE == 0
 
-def get_experiences(memory_buffer):
+
+def get_experiences(memory_buffer, observation_space, action_space):
     """
     Returns a random sample of experience tuples drawn from the memory buffer.
 
-    Retrieves a random sample of experience tuples from the given memory_buffer and
-    returns them as TensorFlow Tensors. The size of the random sample is determined by
-    the mini-batch size (MINIBATCH_SIZE). 
-
     Args:
-        memory_buffer (deque):
-            A deque containing experiences. The experiences are stored in the memory
-            buffer as namedtuples: namedtuple("Experience", field_names=["state",
-            "action", "reward", "next_state", "done"]).
+        memory_buffer (deque): A deque of Experience namedtuples:
+            (state, action, reward, next_state, done)
+        observation_space (gym.spaces.Box): Environment's observation space
+        action_space (gym.spaces.Box): Environment's action space
 
     Returns:
-        A tuple (states, actions, rewards, next_states, done_vals) where:
-
-            - states are the starting states of the agent.
-            - actions are the actions taken by the agent from the starting states.
-            - rewards are the rewards received by the agent after taking the actions.
-            - next_states are the new states of the agent after taking the actions.
-            - done_vals are the boolean values indicating if the episode ended.
-
-        All tuple elements are TensorFlow Tensors whose shape is determined by the
-        mini-batch size and the given Gym environment. All
-        TensorFlow Tensors have elements with dtype=tf.float32.
+        Tuple of TensorFlow tensors: (states, actions, rewards, next_states, dones)
     """
     experiences = random.sample(memory_buffer, k=MINIBATCH_SIZE)
 
-    # Preallocate numpy arrays to avoid overhead of list comprehensions + conversions
-    states = np.empty((MINIBATCH_SIZE, *experiences[0].state.shape), dtype=np.float32)
-    actions = np.empty((MINIBATCH_SIZE,), dtype=np.float32)
+    # Dynamically allocate based on environment specs
+    obs_shape = observation_space.shape
+    obs_dtype = observation_space.dtype
+
+    act_shape = action_space.shape
+    act_dtype = action_space.dtype
+
+    states = np.empty((MINIBATCH_SIZE, *obs_shape), dtype=obs_dtype)
+    actions = np.empty((MINIBATCH_SIZE, *act_shape), dtype=act_dtype)
     rewards = np.empty((MINIBATCH_SIZE,), dtype=np.float32)
-    next_states = np.empty((MINIBATCH_SIZE, *experiences[0].next_state.shape), dtype=np.float32)
+    next_states = np.empty((MINIBATCH_SIZE, *obs_shape), dtype=obs_dtype)
     dones = np.empty((MINIBATCH_SIZE,), dtype=np.float32)
 
     for i, e in enumerate(experiences):
@@ -75,13 +67,12 @@ def get_experiences(memory_buffer):
         next_states[i] = e.next_state
         dones[i] = float(e.done)
 
-    # Convert once at the end
     return (
-        tf.convert_to_tensor(states),
-        tf.convert_to_tensor(actions),
-        tf.convert_to_tensor(rewards),
-        tf.convert_to_tensor(next_states),
-        tf.convert_to_tensor(dones),
+        tf.convert_to_tensor(states, dtype=tf.float32),
+        tf.convert_to_tensor(actions, dtype=tf.float32),
+        tf.convert_to_tensor(rewards, dtype=tf.float32),
+        tf.convert_to_tensor(next_states, dtype=tf.float32),
+        tf.convert_to_tensor(dones, dtype=tf.float32),
     )
 
 
@@ -101,6 +92,7 @@ def get_new_eps(epsilon):
     """
 
     return max(E_MIN, E_DECAY * epsilon)
+
 
 def update_target_network(q_network, target_q_network):
     """
@@ -128,7 +120,7 @@ def update_target_network(q_network, target_q_network):
 
 
 @tf.function
-def compute_loss(experiences, gamma, q_network, target_q_network):
+def compute_loss_discreate(experiences, gamma, q_network, target_q_network):
     """ 
     Calculates the loss.
 
@@ -143,68 +135,23 @@ def compute_loss(experiences, gamma, q_network, target_q_network):
             the y targets and the Q(s,a) values.
     """
 
-    # Unpack the mini-batch of experience tuples
     states, actions, rewards, next_states, done_vals = experiences
 
-    # Compute max Q^(s,a)
-    max_qsa = tf.reduce_max(target_q_network(next_states), axis=-1)
+    # Get max Q-values from target network for next states
+    max_qsa = tf.reduce_max(target_q_network(next_states), axis=1)
 
-    # Set y = R if episode terminates, otherwise set y = R + γ max Q^(s,a).
-    y_targets = tf.stop_gradient(rewards + (1 - done_vals) * gamma * max_qsa)
+    # Compute target values: y = r + (1 - done) * gamma * max Q'(s', a')
+    y_targets = rewards + (1.0 - done_vals) * gamma * max_qsa
+    y_targets = tf.stop_gradient(y_targets)
 
-    # Get the q_values and reshape to match y_targets
-    q_values = q_network(states)
-    q_values = tf.gather_nd(q_values, tf.stack([tf.range(q_values.shape[0]),
-                                                tf.cast(actions, tf.int32)], axis=1))
+    # Predict Q-values from current q_network
+    q_values_all = q_network(states)
 
-    # Compute the loss
-    loss = tf.keras.losses.MSE(y_targets, q_values)
+    # Get Q-values for the actions actually taken
+    batch_size = tf.shape(actions)[0]
+    indices = tf.stack([tf.range(batch_size), tf.cast(actions, tf.int32)], axis=1)
+    q_values = tf.gather_nd(q_values_all, indices)
+
+    # Compute Mean Squared Error loss
+    loss = tf.reduce_mean(tf.keras.losses.MSE(y_targets, q_values))
     return loss
-
-
-def create_video(filename, env, q_network, fps=30):
-    """
-    Creates a video of an agent interacting with a Gym environment.
-
-    The agent will interact with the given env environment using the q_network to map
-    states to Q values and using a greedy policy to choose its actions (i.e it will
-    choose the actions that yield the maximum Q values).
-
-    The video will be saved to a file with the given filename. The video format must be
-    specified in the filename by providing a file extension (.mp4, .gif, etc..). If you 
-    want to embed the video in a Jupyter notebook using the embed_mp4 function, then the
-    video must be saved as an MP4 file. 
-
-    Args:
-        filename (string):
-            The path to the file to which the video will be saved. The video format will
-            be selected based on the filename. Therefore, the video format must be
-            specified in the filename by providing a file extension (i.e.
-            "./videos/xxx.mp4"). To see a list of supported formats see the
-            imageio documentation: https://imageio.readthedocs.io/en/v2.8.0/formats.html
-        env (Gym Environment): 
-            The Gym environment the agent will interact with.
-        q_network (tf.keras.Sequential):
-            A TensorFlow Keras Sequential model that maps states to Q values.
-        fps (int):
-            The number of frames per second. Specifies the frame rate of the output
-            video. The default frame rate is 30 frames per second.  
-    """
-
-    with imageio.get_writer(filename, fps=fps, codec='libx264') as video:
-        done = False
-        state, _ = env.reset()
-        frame = env.render()
-        video.append_data(frame)
-
-        while not done:
-            state_input = np.expand_dims(state, axis=0)
-            q_values = q_network(state_input)
-            action = np.argmax(q_values.numpy()[0])
-
-            next_state, reward, terminated, truncated, _ = env.step(action)
-            done = terminated or truncated
-            frame = env.render()
-            video.append_data(frame)
-
-            state = next_state

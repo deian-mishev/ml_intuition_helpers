@@ -6,6 +6,7 @@ import numpy as np
 import gymnasium as gym
 from config import *
 import utils
+import imageio
 
 tf.random.set_seed(SEED)
 logging.getLogger().setLevel(logging.ERROR)
@@ -53,7 +54,7 @@ def agent_learn(experiences, gamma, target_q_network, optimizer, q_network):
 
     # Calculate the loss
     with tf.GradientTape() as tape:
-        loss = utils.compute_loss(
+        loss = utils.compute_loss_discreate(
             experiences, gamma, q_network, target_q_network)
 
     # Get the gradients of the loss with respect to the weights.
@@ -104,7 +105,8 @@ def main():
                 state, action, reward, next_state, done))
 
             if utils.check_update_conditions(t, memory_buffer):
-                experiences = utils.get_experiences(memory_buffer)
+                experiences = utils.get_experiences(
+                    memory_buffer, env.observation_space, env.action_space)
                 agent_learn(experiences, GAMMA, target_q_network, optimizer, q_network)
 
             state = next_state
@@ -126,7 +128,36 @@ def main():
             break
 
     filename = "./data/lunar_lander.mp4"
-    utils.create_video(filename, env, q_network)
+    create_video(filename, env, q_network)
+
+def create_video(filename, env, q_network, fps=30):
+    with imageio.get_writer(filename, fps=fps, codec='libx264') as video:
+        done = False
+        
+        # Handle reset for Gym and Gymnasium APIs
+        reset_result = env.reset()
+        if isinstance(reset_result, tuple) and len(reset_result) == 2:
+            state, _ = reset_result
+        else:
+            state = reset_result
+        
+        frame = env.render()
+        video.append_data(frame)
+
+        while not done:
+            state_input = np.expand_dims(state, axis=0)
+            q_values = q_network(state_input)
+            action = np.argmax(q_values.numpy()[0])
+
+            next_state, reward, terminated, truncated, _ = env.step(action)
+            done = terminated or truncated
+            
+            frame = env.render()
+            video.append_data(frame)
+
+            state = next_state
+
+    return filename
 
 if __name__ == "__main__":
     main()
