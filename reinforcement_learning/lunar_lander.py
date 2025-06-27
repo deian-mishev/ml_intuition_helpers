@@ -82,6 +82,7 @@ def main():
     memory_buffer = deque(maxlen=MEMORY_SIZE)
     epsilon = 1.0
     recent_points = deque(maxlen=NUM_P_AV)
+    prev_avg_points = float('-inf')
 
     for episode in range(1, NUM_OF_EPISODES + 1):
 
@@ -117,17 +118,19 @@ def main():
                 break
 
         recent_points.append(total_reward)
-        avg_points = sum(recent_points) / len(recent_points)
-        epsilon = utils.get_new_eps(epsilon)
+        new_avg  = sum(recent_points) / len(recent_points)
+        epsilon = utils.get_new_eps(epsilon, prev_avg_points < new_avg)
 
-        print(f"\rEpisode {episode} | Average (last {NUM_P_AV}): {avg_points:.2f}",
+        print(f"\rEpisode {episode} | Epsilon {epsilon} | Average (last {NUM_P_AV}): {new_avg:.2f}",
                 end="\n" if episode % NUM_P_AV == 0 else "")
 
-        if avg_points >= CUTTOFF_AVG:
+        if new_avg >= CUTTOFF_AVG:
             print(f"\n\nEnvironment solved in {episode} episodes!")
-            q_network.save("./data/lunar_lander_model.h5")
+            q_network.save("./data/lunar_lander_model_v2.h5")
             target_q_network.save("./data/lunar_lander_weights.h5")
             break
+
+        prev_avg_points = new_avg 
 
     filename = "./data/lunar_lander.mp4"
     create_video(filename, env, q_network)

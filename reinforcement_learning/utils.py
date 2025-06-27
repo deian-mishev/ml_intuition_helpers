@@ -76,22 +76,21 @@ def get_experiences(memory_buffer, observation_space, action_space):
     )
 
 
-def get_new_eps(epsilon):
+def get_new_eps(epsilon, decrease=True):
     """
     Updates the epsilon value for the ε-greedy policy.
 
-    Gradually decreases the value of epsilon towards a minimum value (E_MIN) using the
-    given ε-decay rate (E_DECAY).
+    Either decreases epsilon towards E_MIN (exploration decay) or increases it 
+    towards E_MAX (exploration growth), depending on the `decrease` flag.
 
     Args:
-        epsilon (float):
-            The current value of epsilon.
+        epsilon (float): The current value of epsilon.
+        decrease (bool): Whether to decrease or increase epsilon.
 
     Returns:
-       A float with the updated value of epsilon.
+        float: The updated value of epsilon.
     """
-
-    return max(E_MIN, E_DECAY * epsilon)
+    return max(E_MIN, E_DECAY * epsilon) if decrease else min(E_MAX, (2 - E_DECAY) * epsilon)
 
 
 def update_target_network(q_network, target_q_network):
