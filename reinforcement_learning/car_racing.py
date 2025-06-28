@@ -129,7 +129,6 @@ def main():
     # target_q_network = tf.keras.models.load_model("./data/car_racing_weights.h5")
     q_network = build_q_network(obs_shape, num_actions)
     target_q_network = build_q_network(obs_shape, num_actions)
-
     target_q_network.set_weights(q_network.get_weights())
 
     optimizer = tf.keras.optimizers.Adam(learning_rate=ALPHA)
@@ -196,7 +195,7 @@ def main():
         if new_avg >= CUTTOFF_AVG:
             print(f"\n\nEnvironment solved in {episode} episodes!")
             q_network.save("./data/car_racing_model.h5")
-            q_network.save("./data/car_racing_weights.h5")
+            target_q_network.save("./data/car_racing_weights.h5")
             break
 
         prev_avg_points = new_avg
