@@ -10,10 +10,12 @@ import time
 random.seed(SEED)
 tf.random.set_seed(SEED)
 
+
 def simulate_alt_press():
     win32api.keybd_event(0x12, 0, 0, 0)
     time.sleep(0.05)
     win32api.keybd_event(0x12, 0, win32con.KEYEVENTF_KEYUP, 0)
+
 
 def force_focus_window(hwnd):
     try:
@@ -132,7 +134,7 @@ def update_target_network(q_network, target_q_network):
 
     The weights of the target_q_network are updated using the soft update rule:
 
-                    w_target = (TAU * w) + (1 - TAU) * w_target
+         w_target = (TAU * w) + (1 - TAU) * w_target
 
     where w_target are the weights of the target_q_network, TAU is the soft update
     parameter, and w are the weights of the q_network.
