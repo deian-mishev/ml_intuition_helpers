@@ -35,33 +35,9 @@ def build_q_network(input_shape, num_actions):
         tf.keras.layers.Dense(num_actions)
     ])
 
-
-@tf.function(jit_compile=True)
-def agent_learn(experiences, gamma, target_q_network, optimizer, q_network):
-    """
-    Updates the weights of the Q networks.
-
-    Args:
-      experiences: (tuple) tuple of ["state", "action", "reward", "next_state", "done"] namedtuples
-      gamma: (float) The discount factor.
-    """
-    with tf.GradientTape() as tape:
-        loss = utils.compute_loss_discreate(
-            experiences, gamma, q_network, target_q_network)
-    gradients = tape.gradient(loss, q_network.trainable_variables)
-    optimizer.apply_gradients(zip(gradients, q_network.trainable_variables))
-    utils.update_target_network(q_network, target_q_network)
-
-
-@tf.function
-def get_greedy_action(q_values):
-    return tf.argmax(q_values, axis=1)[0]
-
-
 def preprocess_frame_np(frame):
     gray = np.dot(frame[..., :3], [0.2989, 0.5870, 0.1140])
     return gray.astype(np.float32)[..., None]
-
 
 def manual_drive(env, buffer, num_steps):
     state, _ = env.reset()
@@ -148,10 +124,7 @@ def main():
             state_input = tf.expand_dims(state, 0)
             q_values = q_network(state_input)
 
-            if np.random.rand() > epsilon:
-                action = int(get_greedy_action(q_values))
-            else:
-                action = np.random.randint(1, num_actions)
+            action = utils.get_action(q_values, epsilon)
 
             next_state, reward, terminated, truncated, _ = env.step(action)
             done = terminated or truncated
@@ -163,8 +136,8 @@ def main():
                 state, action, reward, next_state, done))
 
             if utils.check_update_conditions(t, memory_buffer):
-                experiences = get_experiences(memory_buffer, MINIBATCH_SIZE)
-                agent_learn(experiences, GAMMA, target_q_network,
+                experiences = utils.get_experiences(memory_buffer, MINIBATCH_SIZE)
+                utils.agent_learn(experiences, GAMMA, target_q_network,
                             optimizer, q_network)
 
             state = next_state
@@ -183,8 +156,8 @@ def main():
             temp = deque(maxlen=MAX_NUM_OF_STEPS*2)
             if manual_drive(env_human, temp, MAX_NUM_OF_STEPS*2):
                 env_human.close()
-                experiences = get_experiences(temp, len(temp))
-                agent_learn(experiences, GAMMA, target_q_network,
+                experiences = utils.get_experiences(temp, len(temp))
+                utils.agent_learn(experiences, GAMMA, target_q_network,
                             optimizer, q_network)
                 memory_buffer.extend(temp)
             else:
@@ -203,22 +176,6 @@ def main():
         prev_avg_points = new_avg
 
     create_video(FILE_FEEDBACK, env, q_network)
-
-
-def get_experiences(memory_buffer, k):
-    experiences = random.sample(memory_buffer, k)
-    states, actions, rewards, next_states, dones = zip(*experiences)
-
-    states = np.stack(states).astype(np.float32)
-    next_states = np.stack(next_states).astype(np.float32)
-
-    return (
-        tf.convert_to_tensor(states),
-        tf.convert_to_tensor(actions, dtype=tf.int32),
-        tf.convert_to_tensor(rewards, dtype=tf.float32),
-        tf.convert_to_tensor(next_states),
-        tf.convert_to_tensor(dones, dtype=tf.float32)
-    )
 
 
 def create_video(filename, env, q_network, fps=30):

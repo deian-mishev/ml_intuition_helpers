@@ -3,45 +3,8 @@ from config import *
 import random
 import numpy as np
 import tensorflow as tf
-import win32gui
-import win32con
-import win32api
-import time
 random.seed(SEED)
 tf.random.set_seed(SEED)
-
-
-def simulate_alt_press():
-    win32api.keybd_event(0x12, 0, 0, 0)
-    time.sleep(0.05)
-    win32api.keybd_event(0x12, 0, win32con.KEYEVENTF_KEYUP, 0)
-
-
-def force_focus_window(hwnd):
-    try:
-        win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
-        simulate_alt_press()
-        win32gui.SetForegroundWindow(hwnd)
-    except Exception as e:
-        win32gui.SetWindowPos(
-            hwnd, win32con.HWND_TOPMOST, 0, 0, 0, 0,
-            win32con.SWP_NOMOVE | win32con.SWP_NOSIZE
-        )
-        win32gui.SetWindowPos(
-            hwnd, win32con.HWND_NOTOPMOST, 0, 0, 0, 0,
-            win32con.SWP_NOMOVE | win32con.SWP_NOSIZE
-        )
-
-
-def focus_env_window(title_part="pygame"):
-    def enumHandler(hwnd, _):
-        if win32gui.IsWindowVisible(hwnd):
-            title = win32gui.GetWindowText(hwnd)
-            if title_part.lower() in title.lower():
-
-                force_focus_window(hwnd)
-    win32gui.EnumWindows(enumHandler, None)
-
 
 def check_update_conditions(t, memory_buffer):
     """
@@ -67,7 +30,7 @@ def check_update_conditions(t, memory_buffer):
     return len(memory_buffer) > MINIBATCH_SIZE and (t + 1) % NUM_STEPS_FOR_UPDATE == 0
 
 
-def get_experiences(memory_buffer, observation_space, action_space):
+def get_experiences_smart(memory_buffer, observation_space, action_space):
     """
     Returns a random sample of experience tuples drawn from the memory buffer.
 
@@ -108,6 +71,22 @@ def get_experiences(memory_buffer, observation_space, action_space):
         tf.convert_to_tensor(rewards, dtype=tf.float32),
         tf.convert_to_tensor(next_states, dtype=tf.float32),
         tf.convert_to_tensor(dones, dtype=tf.float32),
+    )
+
+
+def get_experiences(memory_buffer, k):
+    experiences = random.sample(memory_buffer, k)
+    states, actions, rewards, next_states, dones = zip(*experiences)
+
+    states = np.stack(states).astype(np.float32)
+    next_states = np.stack(next_states).astype(np.float32)
+
+    return (
+        tf.convert_to_tensor(states),
+        tf.convert_to_tensor(actions, dtype=tf.int32),
+        tf.convert_to_tensor(rewards, dtype=tf.float32),
+        tf.convert_to_tensor(next_states),
+        tf.convert_to_tensor(dones, dtype=tf.float32)
     )
 
 
@@ -190,3 +169,42 @@ def compute_loss_discreate(experiences, gamma, q_network, target_q_network):
     # Compute Mean Squared Error loss
     loss = tf.reduce_mean(tf.keras.losses.MSE(y_targets, q_values))
     return loss
+
+
+@tf.function(jit_compile=True)
+def agent_learn(experiences, gamma, target_q_network, optimizer, q_network):
+    """
+    Updates the weights of the Q networks.
+
+    Args:
+      experiences: (tuple) tuple of ["state", "action", "reward", "next_state", "done"] namedtuples
+      gamma: (float) The discount factor.
+    """
+    with tf.GradientTape() as tape:
+        loss = compute_loss_discreate(
+            experiences, gamma, q_network, target_q_network)
+    gradients = tape.gradient(loss, q_network.trainable_variables)
+    optimizer.apply_gradients(zip(gradients, q_network.trainable_variables))
+    update_target_network(q_network, target_q_network)
+
+
+def get_action(q_values, epsilon, num_actions=4):
+    """
+    Efficient ε-greedy action selection.
+
+    Args:
+        q_values (tf.Tensor): Q-values for actions, shape (1, num_actions)
+        epsilon (float): Exploration rate
+        num_actions (int): Number of possible actions
+
+    Returns:
+        int: Chosen action
+    """
+    if np.random.rand() > epsilon:
+        return int(get_greedy_action(q_values))
+    return np.random.randint(num_actions)
+
+
+@tf.function
+def get_greedy_action(q_values):
+    return tf.argmax(q_values, axis=1)[0]

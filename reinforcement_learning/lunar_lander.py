@@ -14,6 +14,7 @@ logging.getLogger().setLevel(logging.ERROR)
 Experience = namedtuple("Experience", field_names=[
                         "state", "action", "reward", "next_state", "done"])
 
+
 def build_q_network(input_shape, num_actions):
     """
     Creates a Q-network with 2 hidden layers.
@@ -25,55 +26,14 @@ def build_q_network(input_shape, num_actions):
         tf.keras.layers.Dense(num_actions)
     ])
 
-def get_action(q_values, epsilon, num_actions=4):
-    """
-    Efficient ε-greedy action selection.
-
-    Args:
-        q_values (tf.Tensor): Q-values for actions, shape (1, num_actions)
-        epsilon (float): Exploration rate
-        num_actions (int): Number of possible actions
-
-    Returns:
-        int: Chosen action
-    """
-    if np.random.rand() > epsilon:
-        return int(np.argmax(q_values.numpy()))
-    return np.random.randint(num_actions)
-
-@tf.function(jit_compile=True)
-def agent_learn(experiences, gamma, target_q_network, optimizer, q_network):
-    """
-    Updates the weights of the Q networks.
-
-    Args:
-      experiences: (tuple) tuple of ["state", "action", "reward", "next_state", "done"] namedtuples
-      gamma: (float) The discount factor.
-
-    """
-
-    # Calculate the loss
-    with tf.GradientTape() as tape:
-        loss = utils.compute_loss_discreate(
-            experiences, gamma, q_network, target_q_network)
-
-    # Get the gradients of the loss with respect to the weights.
-    gradients = tape.gradient(loss, q_network.trainable_variables)
-
-    # Update the weights of the q_network.
-    optimizer.apply_gradients(zip(gradients, q_network.trainable_variables))
-
-    # update the weights of target q_network
-    utils.update_target_network(q_network, target_q_network)
-
 
 def main():
     env = gym.make("LunarLander-v3", render_mode="rgb_array")
     obs_shape = env.observation_space.shape
     num_actions = env.action_space.n
-    
-    q_network = tf.keras.models.load_model('./data/lunar_lander_model.h5')
-    # q_network = build_q_network(obs_shape, num_actions)
+
+    # q_network = tf.keras.models.load_model('./data/lunar_lander_model.h5')
+    q_network = build_q_network(obs_shape, num_actions)
     target_q_network = build_q_network(obs_shape, num_actions)
     target_q_network.set_weights(q_network.get_weights())
 
@@ -97,7 +57,7 @@ def main():
             # state needs to be the right shape for the q_network
             state_input = tf.expand_dims(state, 0)  # TF-friendly
             q_values = q_network(state_input)
-            action = get_action(q_values, epsilon)
+            action = utils.get_action(q_values, epsilon)
             # Take action A and receive reward R and the next state S'
             next_state, reward, terminated, truncated, _ = env.step(action)
             done = terminated or truncated
@@ -107,9 +67,10 @@ def main():
                 state, action, reward, next_state, done))
 
             if utils.check_update_conditions(t, memory_buffer):
-                experiences = utils.get_experiences(
+                experiences = utils.get_experiences_smart(
                     memory_buffer, env.observation_space, env.action_space)
-                agent_learn(experiences, GAMMA, target_q_network, optimizer, q_network)
+                utils.agent_learn(experiences, GAMMA,
+                                  target_q_network, optimizer, q_network)
 
             state = next_state
             total_reward += reward
@@ -118,34 +79,35 @@ def main():
                 break
 
         recent_points.append(total_reward)
-        new_avg  = sum(recent_points) / len(recent_points)
+        new_avg = sum(recent_points) / len(recent_points)
         epsilon = utils.get_new_eps(epsilon, prev_avg_points < new_avg)
 
         print(f"\rEpisode {episode} | Epsilon {epsilon} | Average (last {NUM_P_AV}): {new_avg:.2f}",
-                end="\n" if episode % NUM_P_AV == 0 else "")
+              end="\n" if episode % NUM_P_AV == 0 else "")
 
         if new_avg >= CUTTOFF_AVG:
             print(f"\n\nEnvironment solved in {episode} episodes!")
-            q_network.save("./data/lunar_lander_model_v2.h5")
+            q_network.save("./data/lunar_lander_model.h5")
             target_q_network.save("./data/lunar_lander_weights.h5")
             break
 
-        prev_avg_points = new_avg 
+        prev_avg_points = new_avg
 
     filename = "./data/lunar_lander.mp4"
     create_video(filename, env, q_network)
 
+
 def create_video(filename, env, q_network, fps=30):
     with imageio.get_writer(filename, fps=fps, codec='libx264') as video:
         done = False
-        
+
         # Handle reset for Gym and Gymnasium APIs
         reset_result = env.reset()
         if isinstance(reset_result, tuple) and len(reset_result) == 2:
             state, _ = reset_result
         else:
             state = reset_result
-        
+
         frame = env.render()
         video.append_data(frame)
 
@@ -156,13 +118,14 @@ def create_video(filename, env, q_network, fps=30):
 
             next_state, reward, terminated, truncated, _ = env.step(action)
             done = terminated or truncated
-            
+
             frame = env.render()
             video.append_data(frame)
 
             state = next_state
 
     return filename
+
 
 if __name__ == "__main__":
     main()
