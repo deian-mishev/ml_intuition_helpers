@@ -4,7 +4,6 @@ eventlet.monkey_patch()
 from collections import deque, namedtuple
 from dataclasses import dataclass, field
 import os
-import time
 import threading
 import utils
 from config import *
@@ -12,44 +11,88 @@ import base64
 from io import BytesIO
 from PIL import Image
 import tensorflow as tf
-from pettingzoo.atari import boxing_v2
+from pettingzoo.atari import boxing_v2, space_invaders_v2, tennis_v3
 from flask_socketio import SocketIO, emit, disconnect
-from flask import Flask, request
+from flask import Flask, jsonify, request
+from typing import Callable, Optional
 
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*")
 global_lock = threading.Lock()
-memory_buffer = deque(maxlen=MEMORY_SIZE)
 optimizer = tf.keras.optimizers.Adam(learning_rate=ALPHA)
 
 client_sessions = {}
-model_path = "./data/boxing_model.keras"
-weights_path = "./data/boxing_weights.keras"
 
 q_network = None
 target_q_network = None
 num_actions = 0
 
 epsilon = 1.0
-input_timeout = 1/80.0
+input_timeout = 0.01
 
-KEY_TO_ACTION = {
-    "0": 0, "s": 1, "8": 2, "6": 3, "4": 4, "2": 5,
-    "9": 6, "7": 7, "3": 8, "1": 9, "w": 10, "d": 11,
-    "a": 12, "x": 13, "e": 14, "q": 15, "c": 16, "z": 17
+
+@dataclass
+class EnvironmentConfig:
+    KEY_MAP: dict
+    model_path: str
+    weights_path: str
+    env: Optional[Callable] = field(default=None)
+
+
+atari_pro = "./data/atari_pro.keras"
+atari_pro_weights = "./data/atari_pro_weights.keras"
+
+environments = {
+    'boxing_v2_config': EnvironmentConfig(
+        KEY_MAP={
+            "0": 0, "s": 1, "8": 2, "6": 3, "4": 4, "2": 5,
+            "9": 6, "7": 7, "3": 8, "1": 9, "w": 10, "d": 11,
+            "a": 12, "x": 13, "e": 14, "q": 15, "c": 16, "z": 17
+        },
+        model_path="./data/boxing_model.keras",
+        weights_path="./data/boxing_weights.keras",
+        env=lambda render_mode="rgb_array": boxing_v2.env(
+            render_mode=render_mode)
+    ),
+    "space_invaders_v2": EnvironmentConfig(
+        KEY_MAP={
+            "8": 2, "6": 4, "4": 3, "2": 5, "s": 1
+        },
+        model_path="./data/space_invaders_v2.keras",
+        weights_path="./data/space_invaders_v2_weights.keras",
+        env=lambda render_mode="rgb_array": space_invaders_v2.env(
+            render_mode=render_mode)
+    ),
+    "tennis_v3": EnvironmentConfig(
+        KEY_MAP={
+            "8": 2, "6": 3, "4": 4,
+            "2": 5, "9": 6, "7": 7,
+            "3": 8, "1": 9, "w": 10,
+            "d": 11, "a": 12, "x": 13,
+            "e": 14, "q": 15, "c": 16,
+            "z": 17, "s": 1
+        },
+        model_path="./data/tennis_v3.keras",
+        weights_path="./data/tennis_v3_weights.keras",
+        env=lambda render_mode="rgb_array": tennis_v3.env(
+            render_mode=render_mode)
+    )
 }
 
 
 @dataclass
 class SessionState:
+    env_config: EnvironmentConfig
     env: object
     agent_iter: object
     current_agent: object
     state: object
     thread: threading.Thread = None
     thread_stop_event: threading.Event = None
-    human_action: int = 0
+    action_queue: deque = field(default_factory=deque)
     lock: threading.Lock = field(default_factory=threading.Lock)
+    memory_buffer: deque = field(
+        default_factory=lambda: deque(maxlen=MEMORY_SIZE))
 
 
 Experience = namedtuple("Experience", field_names=[
@@ -69,10 +112,10 @@ def build_q_network(input_shape, num_actions):
     ])
 
 
-def train_step():
-    if len(memory_buffer) < MINIBATCH_SIZE:
+def train_step(session: SessionState):
+    if len(session.memory_buffer) < MINIBATCH_SIZE:
         return
-    experiences = utils.get_experiences(memory_buffer, MINIBATCH_SIZE)
+    experiences = utils.get_experiences(session.memory_buffer, MINIBATCH_SIZE)
     utils.agent_learn(experiences, GAMMA, target_q_network,
                       optimizer, q_network)
 
@@ -95,8 +138,10 @@ def frame_emit_loop(sid):
         try:
             if session.current_agent == HUMAN_AGENT_NAME:
                 with session.lock:
-                    action = session.human_action
-                    session.human_action = 0
+                    if session.action_queue:
+                        action = session.action_queue.popleft()
+                    else:
+                        action = 0
             else:
                 with global_lock:
                     q_values = q_network(tf.expand_dims(session.state, 0))
@@ -105,16 +150,15 @@ def frame_emit_loop(sid):
             obs, reward, terminated, truncated, info = session.env.last()
             done = terminated or truncated
 
-            with global_lock:
-                memory_buffer.append(Experience(
-                    session.state, action, reward, obs, done))
+            session.memory_buffer.append(Experience(
+                session.state, action, reward, obs, done))
 
             if done:
                 session.env.reset()
                 session.agent_iter = iter(session.env.agent_iter())
                 session.current_agent = next(session.agent_iter)
                 socketio.emit('episode_end', {
-                            'message': 'Episode ended'}, room=sid)
+                    'message': 'Episode ended'}, room=sid)
                 break
 
             session.env.step(action)
@@ -129,13 +173,33 @@ def frame_emit_loop(sid):
         socketio.sleep(input_timeout)
 
 
+@app.route('/preconnect', methods=['GET'])
+def preconnect():
+    environments_list = list(environments.keys())
+    ai_players = ["regular", "atari_pro"]
+
+    return jsonify({
+        "environments": environments_list,
+        "ai_players": ai_players
+    })
+
+
 @socketio.on('connect')
 def on_connect():
     global num_actions, q_network, target_q_network
     sid = request.sid
-    print(f"Client {sid} connected")
+    env_name = request.args.get("env")
+    ai_player = request.args.get("ai_player")
+    print(
+        f"Client {sid} connected with env={env_name}, againg player_id={ai_player}")
 
-    env = boxing_v2.env(render_mode="rgb_array")
+    env_config: EnvironmentConfig = environments[env_name]
+    env = env_config.env()
+
+    if ai_player == 'atari_pro':
+        env_config.model_path = environments['atari_pro']
+        env_config.weights_path = environments['atari_pro_weights']
+
     env.reset()
     agent_iter = iter(env.agent_iter())
     current_agent = next(agent_iter)
@@ -144,10 +208,11 @@ def on_connect():
     if q_network is None:
         with global_lock:
             num_actions = env.action_space(current_agent).n
-            if os.path.exists(model_path) and os.path.exists(weights_path):
+            if os.path.exists(env_config.model_path) and os.path.exists(env_config.weights_path):
                 print("Loading existing models...")
-                q_network = tf.keras.models.load_model(model_path)
-                target_q_network = tf.keras.models.load_model(weights_path)
+                q_network = tf.keras.models.load_model(env_config.model_path)
+                target_q_network = tf.keras.models.load_model(
+                    env_config.weights_path)
             else:
                 print("Initializing new models...")
                 obs_shape = env.observation_space(current_agent).shape
@@ -166,7 +231,7 @@ def on_connect():
         current_agent=current_agent,
         state=state,
         thread_stop_event=thread_stop_event,
-        human_action=0
+        env_config=env_config
     )
     client_sessions[sid] = session_state
     thread = threading.Thread(target=frame_emit_loop, args=(sid,))
@@ -176,15 +241,19 @@ def on_connect():
 
 
 @socketio.on('input')
-def on_input(key):
+def on_input(keys: list[str]):
     sid = request.sid
     session = client_sessions.get(sid)
-    action = KEY_TO_ACTION.get(key, None)
+    if session is None:
+        return
+
     with session.lock:
-        if action is not None:
-            session.human_action = action
-        else:
-            session.human_action = 0
+        for key in keys:
+            action = session.env_config.KEY_MAP.get(key)
+            if action is not None:
+                session.action_queue.append(action)
+            else:
+                session.action_queue.append(0)
 
 
 @socketio.on('disconnect')
@@ -209,11 +278,11 @@ def on_disconnect():
         with global_lock:
             print(f"Teaching model after {sid}.")
             for _ in range(10):
-                train_step()
+                train_step(session)
 
             epsilon = utils.get_new_eps(epsilon)
-            q_network.save("./data/boxing_model.keras")
-            target_q_network.save("./data/boxing_weights.keras")
+            q_network.save(session.env_config.model_path)
+            target_q_network.save(session.env_config.weights_path)
     except Exception as e:
         print(f"Error updating model for session {sid}: {e}")
 
