@@ -1,3 +1,6 @@
 /data/*
 *.pyc
 *.ini
+*.keras
+*.h5
+launch.json
