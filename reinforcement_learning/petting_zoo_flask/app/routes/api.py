@@ -1,15 +1,23 @@
 import os
+from flask_socketio import disconnect
 import tensorflow as tf
-from flask import request, jsonify
-from app import app, socketio, global_lock, client_sessions
+from flask import request, jsonify, session
+
+from app import app, login_required, roles_required, socketio, global_lock, client_sessions, client_sessions_lock
 from app.services.ml_service import ml_service
 from app.services.session_runner import SessionRunner
 from app.config.session_state import SessionState
 from app.config.env_config import EnvironmentConfig, ENVIRONMENTS
 from app.config.scalars import *
+from flask import render_template
 
+@app.route('/index')
+def index():
+    return render_template('index.html')
 
 @app.route('/preconnect', methods=['GET'])
+@login_required
+@roles_required('User')
 def preconnect():
     environments_list = list(ENVIRONMENTS.keys())
     ai_players = ["regular", "atari_pro"]
@@ -22,11 +30,18 @@ def preconnect():
 
 @socketio.on('connect')
 def on_connect():
+    user = session.get('user')
+    roles = session.get('roles', [])
+
+    if not user or 'User' not in roles:
+        disconnect()
+        return
+
     sid = request.sid
     env_name = request.args.get("env")
     ai_player = request.args.get("ai_player")
     print(
-        f"Client {sid} connected with env={env_name}, against player_id={ai_player}")
+        f"User {user} connected with roles {roles} in env={env_name}, against player_id={ai_player}")
 
     env_config: EnvironmentConfig = ENVIRONMENTS[env_name]
     env = env_config.env()
@@ -71,6 +86,7 @@ def on_connect():
                 zip(zero_grads, env_config.q_network.trainable_variables))
 
     session_state = SessionState(
+        user=user,
         env_config=env_config,
         env=env,
         state=state
@@ -78,7 +94,9 @@ def on_connect():
     session_state.agent_iter = agent_iter
     session_state.current_agent = current_agent
 
-    client_sessions[sid] = session_state
+    with client_sessions_lock:
+        client_sessions[sid] = session_state
+    
     session_state.runner = SessionRunner(
         sid, session_state, socketio, global_lock)
     session_state.runner.start()
@@ -87,7 +105,9 @@ def on_connect():
 @socketio.on('input')
 def on_input(keys: list[str]):
     sid = request.sid
-    session = client_sessions.get(sid)
+    with client_sessions_lock:
+        session = client_sessions.get(sid)
+
     if session is None:
         return
 
@@ -104,8 +124,9 @@ def on_input(keys: list[str]):
 def on_disconnect():
     sid = request.sid
     print(f"Client {sid} disconnected")
+    with client_sessions_lock:
+        session = client_sessions.pop(sid, None)
 
-    session: SessionState = client_sessions.pop(sid, None)
     if session:
         if session.runner:
             session.runner.stop()

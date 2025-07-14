@@ -14,6 +14,7 @@ class SessionState:
     env_config: EnvironmentConfig
     env: object
     state: object
+    user: dict = None
     agent_iter: Optional[object] = None
     current_agent: Optional[object] = None
     runner: Optional["SessionRunner"] = None
