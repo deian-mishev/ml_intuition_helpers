@@ -3,17 +3,19 @@ from flask_socketio import disconnect
 import tensorflow as tf
 from flask import request, jsonify, session
 
-from app import app, login_required, roles_required, socketio, global_lock, client_sessions, client_sessions_lock
+from app import app, socketio, global_lock, client_sessions, client_sessions_lock
 from app.services.ml_service import ml_service
 from app.services.session_runner import SessionRunner
 from app.config.session_state import SessionState
-from app.config.env_config import EnvironmentConfig, ENVIRONMENTS
-from app.config.scalars import *
+from app.config.ml_env_config import EnvironmentConfig, ENVIRONMENTS
+from app.config.env_config import *
+from app.config.oauth2_config import login_required, roles_required
 from flask import render_template
 
 @app.route('/index')
+@login_required
 def index():
-    return render_template('index.html')
+    return render_template("index.html", width=AGENT_VID_WIDTH, height=AGENT_VID_HEIGHT)
 
 @app.route('/preconnect', methods=['GET'])
 @login_required

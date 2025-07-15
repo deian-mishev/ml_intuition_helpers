@@ -1,5 +1,5 @@
 
-from app.config.scalars import *
+from app.config.env_config import *
 from app.config.session_state import SessionState
 
 import random

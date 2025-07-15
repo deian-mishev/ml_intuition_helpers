@@ -2,8 +2,8 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Optional
 import threading
 from collections import deque, namedtuple
-from app.config.scalars import MEMORY_SIZE
-from app.config.env_config import EnvironmentConfig
+from app.config.env_config import MEMORY_SIZE
+from app.config.ml_env_config import EnvironmentConfig
 
 if TYPE_CHECKING:
     from app.services.session_runner import SessionRunner
