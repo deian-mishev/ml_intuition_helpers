@@ -1,8 +1,12 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="UTF-8">
     <title>Agent Playground</title>
+    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"
+        integrity="sha384-mkQ3/7FUtcGyoppY6bz/PORYoGqOl7/aSUMn2ymDOJcapfS6PHqxhRTMh1RR0Q6+"
+        crossorigin="anonymous"></script>
     <style>
         body {
             background-image: url('{{ url_for("static", filename="images/background.png") }}');
@@ -47,7 +51,8 @@
             align-self: flex-start;
         }
 
-        select, button {
+        select,
+        button {
             padding: 10px;
             width: 100%;
             border: 1px solid #ccc;
@@ -89,23 +94,24 @@
         }
     </style>
 </head>
+
 <body>
 
-<div id="screen-container">
-    <h1 id="title">Agent Playground</h1>
+    <div id="screen-container">
+        <h1 id="title">Agent Playground</h1>
 
-    <label for="envSelect">Environment:</label>
-    <select id="envSelect"></select>
+        <label for="envSelect">Environment:</label>
+        <select id="envSelect"></select>
 
-    <label for="playerSelect">AI Player:</label>
-    <select id="playerSelect"></select>
+        <label for="playerSelect">AI Player:</label>
+        <select id="playerSelect"></select>
 
-    <button id="startBtn" disabled>Start</button>
-</div>
+        <button id="startBtn" disabled>Start</button>
+    </div>
 
-<img id="video"
-     width="{{ width }}" height="{{ height }}" />
+    <img id="video" width="{{ width }}" height="{{ height }}" />
 
-<script src="{{ url_for('static', filename='js/agent-client.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/agent-client.js') }}"></script>
 </body>
+
 </html>

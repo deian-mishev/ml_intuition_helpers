@@ -6,7 +6,6 @@ const playerSelect = document.getElementById('playerSelect');
 const startBtn = document.getElementById('startBtn');
 const screen_container = document.getElementById('screen-container');
 let isConnected = false;
-let stompClient = null;
 let socket = null;
 let lastSendTime = 0;
 const SEND_INTERVAL_MS = 50;
@@ -25,8 +24,8 @@ function checkEnableStart() {
 function gameLoop(timestamp) {
     if (timestamp - lastSendTime >= SEND_INTERVAL_MS) {
         if (pressedKeys.size > 0) {
-            const payload = JSON.stringify(Array.from(pressedKeys));
-            stompClient.send("/app/input", {}, payload);
+            const payload = Array.from(pressedKeys);
+            socket.emit('input', payload);
         }
         lastSendTime = timestamp;
     }
@@ -42,13 +41,10 @@ function cleanup() {
     document.removeEventListener("keyup", handleKeyup);
     cancelAnimationFrame(animationFrameId);
 
-    if (stompClient?.connected) {
-        stompClient.disconnect(() => {
-            console.log("STOMP client disconnected");
-        });
+    if (socket?.connected) {
+        socket.disconnect();
     }
 
-    stompClient = null;
     socket = null;
     title.textContent = "Episode ended, play again ..";
     screen_container.style.display = 'flex';
@@ -87,11 +83,14 @@ startBtn.addEventListener("click", () => {
     const ai_player = playerSelect.value;
 
     if (!environment || !ai_player) return;
-    socket = new SockJS('/ws/agent');
-    stompClient = Stomp.over(socket);
-    stompClient.debug = null;
-    stompClient.connect(
-        { env: environment, ai_player: ai_player },
+    socket = io({
+        query: {
+            env: environment,
+            ai_player: ai_player
+        }
+    });
+
+    socket.on("connect",
         () => {
             title.textContent = "Agent Playground";
             screen_container.style.display = 'none';
@@ -99,23 +98,27 @@ startBtn.addEventListener("click", () => {
             isConnected = true;
             checkEnableStart();
 
-            stompClient.subscribe('/user/queue/frame', (base64Frame) => {
-                vid.src = 'data:image/png;base64,' + base64Frame.body;
-            });
-
-            stompClient.subscribe('/user/queue/episode_end', (message) => {
-                cleanup();
-            });
-
             document.addEventListener("keydown", handleKeydown);
             document.addEventListener("keyup", handleKeyup);
             requestAnimationFrame(gameLoop);
         },
         (error) => {
-            console.error("STOMP connection error:", error);
+            console.error("Socket connection error:", error);
             cleanup();
         }
     );
+
+    socket.on("frame", (base64Frame) => {
+        vid.src = 'data:image/png;base64,' + base64Frame;
+    });
+
+    socket.on("episode_end", () => {
+        cleanup();
+    });
+
+    socket.on("disconnect", () => {
+        cleanup();
+    });
 });
 
 window.addEventListener("beforeunload", cleanup);

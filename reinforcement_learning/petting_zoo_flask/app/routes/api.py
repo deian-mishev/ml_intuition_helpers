@@ -12,21 +12,17 @@ from app.config.env_config import *
 from app.config.oauth2_config import login_required, roles_required
 from flask import render_template
 
-@app.route('/index')
-@login_required
-def index():
-    return render_template("index.html", width=AGENT_VID_WIDTH, height=AGENT_VID_HEIGHT)
+AI_PLAYERS = ["regular", "atari_pro"]
 
 @app.route('/preconnect', methods=['GET'])
 @login_required
 @roles_required('User')
 def preconnect():
     environments_list = list(ENVIRONMENTS.keys())
-    ai_players = ["regular", "atari_pro"]
 
     return jsonify({
         "environments": environments_list,
-        "ai_players": ai_players
+        "ai_players": AI_PLAYERS
     })
 
 
@@ -42,8 +38,12 @@ def on_connect():
     sid = request.sid
     env_name = request.args.get("env")
     ai_player = request.args.get("ai_player")
+    if env_name not in ENVIRONMENTS or ai_player not in AI_PLAYERS:
+        disconnect()
+        return
+    
     print(
-        f"User {user} connected with roles {roles} in env={env_name}, against player_id={ai_player}")
+        f"User {user['name']}:{sid} connected with roles {roles} in env={env_name}, against player_id={ai_player}")
 
     env_config: EnvironmentConfig = ENVIRONMENTS[env_name]
     env = env_config.env()
@@ -125,7 +125,7 @@ def on_input(keys: list[str]):
 @socketio.on('disconnect')
 def on_disconnect():
     sid = request.sid
-    print(f"Client {sid} disconnected")
+    print(f"Client {sid} disconnected...")
     with client_sessions_lock:
         session = client_sessions.pop(sid, None)
 
@@ -152,3 +152,9 @@ def on_disconnect():
                 session.env_config.weights_path)
     except Exception as e:
         print(f"Error updating model for session {sid}: {e}")
+
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+@login_required
+def index(path):
+    return render_template("index.html", width=AGENT_VID_WIDTH, height=AGENT_VID_HEIGHT)
