@@ -14,6 +14,7 @@ from flask import render_template
 
 AI_PLAYERS = ["regular", "atari_pro"]
 
+
 @app.route('/preconnect', methods=['GET'])
 @login_required
 @roles_required('User')
@@ -41,9 +42,9 @@ def on_connect():
     if env_name not in ENVIRONMENTS or ai_player not in AI_PLAYERS:
         disconnect()
         return
-    
-    print(
-        f"User {user['name']}:{sid} connected with roles {roles} in env={env_name}, against player_id={ai_player}")
+
+    app.logger.info(
+        f"{sid}: {user['name']} connected with roles {roles} in env={env_name}, against '{ai_player}'")
 
     env_config: EnvironmentConfig = ENVIRONMENTS[env_name]
     env = env_config.env()
@@ -61,7 +62,8 @@ def on_connect():
         if env_config.q_network is None:
             num_actions = env_config.num_actions
             if os.path.exists(env_config.model_path) and os.path.exists(env_config.weights_path):
-                print("Loading existing models...")
+                app.logger.info(
+                    f"{sid}: Loading existing models ${env_config.model_path}")
                 env_config.q_network = tf.keras.models.load_model(
                     env_config.model_path)
                 env_config.target_q_network = tf.keras.models.load_model(
@@ -69,7 +71,7 @@ def on_connect():
                 env_config.optimizer = tf.keras.optimizers.Adam(
                     learning_rate=ALPHA)
             else:
-                print("Initializing new models...")
+                app.logger.info(f"{sid}: Initializing new models...")
                 obs_shape = env_config.observation_space
                 env_config.q_network = ml_service.build_q_network(
                     obs_shape, num_actions)
@@ -98,7 +100,7 @@ def on_connect():
 
     with client_sessions_lock:
         client_sessions[sid] = session_state
-    
+
     session_state.runner = SessionRunner(
         sid, session_state, socketio, global_lock)
     session_state.runner.start()
@@ -125,7 +127,7 @@ def on_input(keys: list[str]):
 @socketio.on('disconnect')
 def on_disconnect():
     sid = request.sid
-    print(f"Client {sid} disconnected...")
+    app.logger.info(f"{sid}: User disconnected...")
     with client_sessions_lock:
         session = client_sessions.pop(sid, None)
 
@@ -135,13 +137,13 @@ def on_disconnect():
         try:
             session.env.close()
         except Exception as e:
-            print(f"Error closing env for session {sid}: {e}")
+            app.logger.error(f"{sid}: Error closing env for session: {e}")
 
-        print(f"Session {sid} cleaned up.")
+        app.logger.info(f"{sid}: Session cleaned up.")
     try:
         with global_lock:
-            print(
-                f"Teaching model after {sid}. Nemesis scored: {session.nemesis_total_reward}")
+            app.logger.info(
+                f"{sid}: Teaching model, nemesis scored: {session.nemesis_total_reward}")
             for _ in range(10):
                 ml_service.train_step(session)
 
@@ -151,7 +153,8 @@ def on_disconnect():
             session.env_config.target_q_network.save(
                 session.env_config.weights_path)
     except Exception as e:
-        print(f"Error updating model for session {sid}: {e}")
+        app.logger.error(f"{sid}: Error updating model for session: {e}")
+
 
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')

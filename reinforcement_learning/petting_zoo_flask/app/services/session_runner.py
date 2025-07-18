@@ -1,6 +1,7 @@
 import threading
 import tensorflow as tf
 from flask_socketio import SocketIO
+from app import app
 from app.config.session_state import SessionState, Experience
 from app.services.rendering_service import render_frame
 from app.services.ml_service import ml_service
@@ -58,8 +59,7 @@ class SessionRunner:
                 frame = render_frame(self.session)
                 self.socketio.emit('frame', frame, room=self.sid)
                 self.session.state = obs
-
             except Exception as e:
-                print(f"Error emitting frame for {self.sid}:", e)
+                app.logger.error(f"{self.sid}: Error emitting frame:", e)
 
             self.socketio.sleep(INPUT_TIMEOUT)

@@ -22,7 +22,7 @@ E_GROW = 1.001            # e-grow rate for the e-greedy policy.
 E_MIN = 0.01              # minimum ε value for the e-greedy policy.
 E_MAX = 1.0               # max ε value for the e-greedy policy.
 
-INPUT_TIMEOUT = 0.01
+INPUT_TIMEOUT = 0.008
 
 ATARI_PRO = "./models/keras/atari_pro.keras"
 ATARI_PRO_WEIGHTS = "./models/keras/atari_pro_weights.keras"

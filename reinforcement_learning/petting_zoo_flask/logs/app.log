@@ -1,0 +1,12 @@
+[2025-07-17 21:01:31,137] INFO in api: cwTKR_q4UmhXMjmbAAAB: PLAYER_FIRST_NAME PLAYER_LAST_NAME connected with roles ['User', 'Admin'] in env=Boxing, against 'regular'
+[2025-07-17 21:01:31,307] INFO in api: cwTKR_q4UmhXMjmbAAAB: Loading existing models $./resources/models/keras/boxing_v2.keras
+[2025-07-17 21:02:13,045] INFO in api: Rhr9yGkYDRP2eT_VAAAB: PLAYER_FIRST_NAME PLAYER_LAST_NAME connected with roles ['User', 'Admin'] in env=Boxing, against 'regular'
+[2025-07-17 21:02:13,212] INFO in api: Rhr9yGkYDRP2eT_VAAAB: Loading existing models $./resources/models/keras/boxing_v2.keras
+[2025-07-17 21:03:13,457] INFO in api: Rhr9yGkYDRP2eT_VAAAB: User disconnected...
+[2025-07-17 21:03:13,475] INFO in api: Rhr9yGkYDRP2eT_VAAAB: Session cleaned up.
+[2025-07-17 21:03:13,476] INFO in api: Rhr9yGkYDRP2eT_VAAAB: Teaching model, nemesis scored: 16
+[2025-07-17 21:03:56,221] INFO in api: S8CIThn6fM6Wt7xzAAAB: PLAYER_FIRST_NAME PLAYER_LAST_NAME connected with roles ['User', 'Admin'] in env=Boxing, against 'regular'
+[2025-07-17 21:03:56,384] INFO in api: S8CIThn6fM6Wt7xzAAAB: Loading existing models $./resources/models/keras/boxing_v2.keras
+[2025-07-17 21:05:38,686] INFO in api: S8CIThn6fM6Wt7xzAAAB: User disconnected...
+[2025-07-17 21:05:38,710] INFO in api: S8CIThn6fM6Wt7xzAAAB: Session cleaned up.
+[2025-07-17 21:05:38,711] INFO in api: S8CIThn6fM6Wt7xzAAAB: Teaching model, nemesis scored: 44
