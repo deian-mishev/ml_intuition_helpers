@@ -5,4 +5,4 @@
 *.h5
 launch.json
 .env
-.log
+*.log
