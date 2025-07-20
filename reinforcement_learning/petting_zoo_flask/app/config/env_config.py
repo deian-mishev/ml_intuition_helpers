@@ -25,4 +25,4 @@ E_MAX = 1.0               # max ε value for the e-greedy policy.
 INPUT_TIMEOUT = 0.008
 
 ATARI_PRO = "./models/keras/atari_pro.keras"
-ATARI_PRO_WEIGHTS = "./models/keras/atari_pro_weights.keras"
+ATARI_PRO_WEIGHTS = "./models/keras/atari_pro_weights.weights.h5"

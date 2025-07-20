@@ -10,3 +10,348 @@
 [2025-07-17 21:05:38,686] INFO in api: S8CIThn6fM6Wt7xzAAAB: User disconnected...
 [2025-07-17 21:05:38,710] INFO in api: S8CIThn6fM6Wt7xzAAAB: Session cleaned up.
 [2025-07-17 21:05:38,711] INFO in api: S8CIThn6fM6Wt7xzAAAB: Teaching model, nemesis scored: 44
+[2025-07-20 21:32:28,541] ERROR in app: Exception on /login [GET]
+Traceback (most recent call last):
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/urllib3/connection.py", line 198, in _new_conn
+    sock = connection.create_connection(
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/urllib3/util/connection.py", line 85, in create_connection
+    raise err
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/urllib3/util/connection.py", line 73, in create_connection
+    sock.connect(sa)
+ConnectionRefusedError: [Errno 111] Connection refused
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/urllib3/connectionpool.py", line 787, in urlopen
+    response = self._make_request(
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/urllib3/connectionpool.py", line 493, in _make_request
+    conn.request(
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/urllib3/connection.py", line 494, in request
+    self.endheaders()
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/http/client.py", line 1280, in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/http/client.py", line 1040, in _send_output
+    self.send(msg)
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/http/client.py", line 980, in send
+    self.connect()
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/urllib3/connection.py", line 325, in connect
+    self.sock = self._new_conn()
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/urllib3/connection.py", line 213, in _new_conn
+    raise NewConnectionError(
+urllib3.exceptions.NewConnectionError: <urllib3.connection.HTTPConnection object at 0x7f9503a72370>: Failed to establish a new connection: [Errno 111] Connection refused
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/requests/adapters.py", line 667, in send
+    resp = conn.urlopen(
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/urllib3/connectionpool.py", line 841, in urlopen
+    retries = retries.increment(
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/urllib3/util/retry.py", line 519, in increment
+    raise MaxRetryError(_pool, url, reason) from reason  # type: ignore[arg-type]
+urllib3.exceptions.MaxRetryError: HTTPConnectionPool(host='localhost', port=8080): Max retries exceeded with url: /realms/petting_zoo_flask_realm/.well-known/openid-configuration (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7f9503a72370>: Failed to establish a new connection: [Errno 111] Connection refused'))
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/flask/app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/flask/app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/flask/app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/flask/app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+  File "/mnt/c/Users/dsmis/Desktop/Development/base-helpers/reinforcement_learning/petting_zoo_flask/app/config/oauth2_config.py", line 91, in login
+    return oauth.api.authorize_redirect(redirect_uri=redirect_uri)
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/authlib/integrations/flask_client/apps.py", line 49, in authorize_redirect
+    rv = self.create_authorization_url(redirect_uri, **kwargs)
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/authlib/integrations/base_client/sync_app.py", line 341, in create_authorization_url
+    metadata = self.load_server_metadata()
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/authlib/integrations/base_client/sync_app.py", line 324, in load_server_metadata
+    resp = session.request(
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/authlib/integrations/requests_client/oauth2_session.py", line 140, in request
+    return super().request(method, url, auth=auth, **kwargs)
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/requests/sessions.py", line 589, in request
+    resp = self.send(prep, **send_kwargs)
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/requests/sessions.py", line 703, in send
+    r = adapter.send(request, **kwargs)
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/requests/adapters.py", line 700, in send
+    raise ConnectionError(e, request=request)
+requests.exceptions.ConnectionError: HTTPConnectionPool(host='localhost', port=8080): Max retries exceeded with url: /realms/petting_zoo_flask_realm/.well-known/openid-configuration (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7f9503a72370>: Failed to establish a new connection: [Errno 111] Connection refused'))
+[2025-07-20 21:32:28,589] ERROR in app: Exception on /login [GET]
+Traceback (most recent call last):
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/urllib3/connection.py", line 198, in _new_conn
+    sock = connection.create_connection(
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/urllib3/util/connection.py", line 85, in create_connection
+    raise err
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/urllib3/util/connection.py", line 73, in create_connection
+    sock.connect(sa)
+ConnectionRefusedError: [Errno 111] Connection refused
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/urllib3/connectionpool.py", line 787, in urlopen
+    response = self._make_request(
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/urllib3/connectionpool.py", line 493, in _make_request
+    conn.request(
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/urllib3/connection.py", line 494, in request
+    self.endheaders()
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/http/client.py", line 1280, in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/http/client.py", line 1040, in _send_output
+    self.send(msg)
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/http/client.py", line 980, in send
+    self.connect()
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/urllib3/connection.py", line 325, in connect
+    self.sock = self._new_conn()
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/urllib3/connection.py", line 213, in _new_conn
+    raise NewConnectionError(
+urllib3.exceptions.NewConnectionError: <urllib3.connection.HTTPConnection object at 0x7f950368aa60>: Failed to establish a new connection: [Errno 111] Connection refused
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/requests/adapters.py", line 667, in send
+    resp = conn.urlopen(
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/urllib3/connectionpool.py", line 841, in urlopen
+    retries = retries.increment(
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/urllib3/util/retry.py", line 519, in increment
+    raise MaxRetryError(_pool, url, reason) from reason  # type: ignore[arg-type]
+urllib3.exceptions.MaxRetryError: HTTPConnectionPool(host='localhost', port=8080): Max retries exceeded with url: /realms/petting_zoo_flask_realm/.well-known/openid-configuration (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7f950368aa60>: Failed to establish a new connection: [Errno 111] Connection refused'))
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/flask/app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/flask/app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/flask/app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/flask/app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+  File "/mnt/c/Users/dsmis/Desktop/Development/base-helpers/reinforcement_learning/petting_zoo_flask/app/config/oauth2_config.py", line 91, in login
+    return oauth.api.authorize_redirect(redirect_uri=redirect_uri)
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/authlib/integrations/flask_client/apps.py", line 49, in authorize_redirect
+    rv = self.create_authorization_url(redirect_uri, **kwargs)
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/authlib/integrations/base_client/sync_app.py", line 341, in create_authorization_url
+    metadata = self.load_server_metadata()
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/authlib/integrations/base_client/sync_app.py", line 324, in load_server_metadata
+    resp = session.request(
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/authlib/integrations/requests_client/oauth2_session.py", line 140, in request
+    return super().request(method, url, auth=auth, **kwargs)
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/requests/sessions.py", line 589, in request
+    resp = self.send(prep, **send_kwargs)
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/requests/sessions.py", line 703, in send
+    r = adapter.send(request, **kwargs)
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/requests/adapters.py", line 700, in send
+    raise ConnectionError(e, request=request)
+requests.exceptions.ConnectionError: HTTPConnectionPool(host='localhost', port=8080): Max retries exceeded with url: /realms/petting_zoo_flask_realm/.well-known/openid-configuration (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7f950368aa60>: Failed to establish a new connection: [Errno 111] Connection refused'))
+[2025-07-20 21:32:36,283] ERROR in app: Exception on /login [GET]
+Traceback (most recent call last):
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/urllib3/connectionpool.py", line 787, in urlopen
+    response = self._make_request(
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/urllib3/connectionpool.py", line 534, in _make_request
+    response = conn.getresponse()
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/urllib3/connection.py", line 565, in getresponse
+    httplib_response = super().getresponse()
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/http/client.py", line 1377, in getresponse
+    response.begin()
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/http/client.py", line 320, in begin
+    version, status, reason = self._read_status()
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/http/client.py", line 281, in _read_status
+    line = str(self.fp.readline(_MAXLINE + 1), "iso-8859-1")
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/socket.py", line 716, in readinto
+    return self._sock.recv_into(b)
+ConnectionResetError: [Errno 104] Connection reset by peer
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/requests/adapters.py", line 667, in send
+    resp = conn.urlopen(
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/urllib3/connectionpool.py", line 841, in urlopen
+    retries = retries.increment(
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/urllib3/util/retry.py", line 474, in increment
+    raise reraise(type(error), error, _stacktrace)
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/urllib3/util/util.py", line 38, in reraise
+    raise value.with_traceback(tb)
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/urllib3/connectionpool.py", line 787, in urlopen
+    response = self._make_request(
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/urllib3/connectionpool.py", line 534, in _make_request
+    response = conn.getresponse()
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/urllib3/connection.py", line 565, in getresponse
+    httplib_response = super().getresponse()
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/http/client.py", line 1377, in getresponse
+    response.begin()
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/http/client.py", line 320, in begin
+    version, status, reason = self._read_status()
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/http/client.py", line 281, in _read_status
+    line = str(self.fp.readline(_MAXLINE + 1), "iso-8859-1")
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/socket.py", line 716, in readinto
+    return self._sock.recv_into(b)
+urllib3.exceptions.ProtocolError: ('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer'))
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/flask/app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/flask/app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/flask/app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/flask/app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+  File "/mnt/c/Users/dsmis/Desktop/Development/base-helpers/reinforcement_learning/petting_zoo_flask/app/config/oauth2_config.py", line 91, in login
+    return oauth.api.authorize_redirect(redirect_uri=redirect_uri)
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/authlib/integrations/flask_client/apps.py", line 49, in authorize_redirect
+    rv = self.create_authorization_url(redirect_uri, **kwargs)
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/authlib/integrations/base_client/sync_app.py", line 341, in create_authorization_url
+    metadata = self.load_server_metadata()
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/authlib/integrations/base_client/sync_app.py", line 324, in load_server_metadata
+    resp = session.request(
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/authlib/integrations/requests_client/oauth2_session.py", line 140, in request
+    return super().request(method, url, auth=auth, **kwargs)
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/requests/sessions.py", line 589, in request
+    resp = self.send(prep, **send_kwargs)
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/requests/sessions.py", line 703, in send
+    r = adapter.send(request, **kwargs)
+  File "/home/dsmis/miniconda3/envs/py39-u/lib/python3.9/site-packages/requests/adapters.py", line 682, in send
+    raise ConnectionError(err, request=request)
+requests.exceptions.ConnectionError: ('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer'))
+[2025-07-20 21:32:53,549] INFO in api: TmhujDMwlv48R7oIAAAB: PLAYER_FIRST_NAME PLAYER_LAST_NAME connected with roles ['User', 'Admin'] in env=Boxing, against 'regular'
+[2025-07-20 21:32:53,720] INFO in api: TmhujDMwlv48R7oIAAAB: Initializing new models...
+[2025-07-20 21:33:31,165] INFO in api: TmhujDMwlv48R7oIAAAB: User disconnected...
+[2025-07-20 21:33:31,167] INFO in api: TmhujDMwlv48R7oIAAAB: Session cleaned up.
+[2025-07-20 21:33:31,168] INFO in api: TmhujDMwlv48R7oIAAAB: Teaching model, nemesis scored: 3
+[2025-07-20 21:33:36,069] ERROR in api: TmhujDMwlv48R7oIAAAB: Error updating model for session: The filename must end in `.weights.h5`. Received: filepath=./resources/models/keras/boxing_v2_weights_1.keras
+[2025-07-20 21:33:42,838] INFO in api: pAp3X8fLML9efKSKAAAD: PLAYER_FIRST_NAME PLAYER_LAST_NAME connected with roles ['User', 'Admin'] in env=Boxing, against 'regular'
+[2025-07-20 21:33:43,004] INFO in api: pAp3X8fLML9efKSKAAAD: Initializing new models...
+[2025-07-20 21:35:42,735] INFO in api: BMn-Xln0dGyDBVHRAAAD: PLAYER_FIRST_NAME PLAYER_LAST_NAME connected with roles ['User', 'Admin'] in env=Boxing, against 'regular'
+[2025-07-20 21:35:42,739] INFO in api: v6lC3pm_OxcQaa4gAAAE: PLAYER_FIRST_NAME PLAYER_LAST_NAME connected with roles ['User', 'Admin'] in env=Boxing, against 'regular'
+[2025-07-20 21:35:42,787] INFO in api: ZUblqOss_AXtc3dGAAAF: PLAYER_FIRST_NAME PLAYER_LAST_NAME connected with roles ['User', 'Admin'] in env=Boxing, against 'regular'
+[2025-07-20 21:35:42,904] INFO in api: v6lC3pm_OxcQaa4gAAAE: Initializing new models...
+[2025-07-20 21:35:42,904] INFO in api: BMn-Xln0dGyDBVHRAAAD: Initializing new models...
+[2025-07-20 21:35:42,959] INFO in api: ZUblqOss_AXtc3dGAAAF: Initializing new models...
+[2025-07-20 21:35:50,166] INFO in api: v6lC3pm_OxcQaa4gAAAE: User disconnected...
+[2025-07-20 21:35:50,171] INFO in api: BMn-Xln0dGyDBVHRAAAD: User disconnected...
+[2025-07-20 21:35:50,177] INFO in api: ZUblqOss_AXtc3dGAAAF: User disconnected...
+[2025-07-20 21:35:50,195] INFO in api: ZUblqOss_AXtc3dGAAAF: Session cleaned up.
+[2025-07-20 21:35:50,196] INFO in api: BMn-Xln0dGyDBVHRAAAD: Session cleaned up.
+[2025-07-20 21:35:50,196] INFO in api: v6lC3pm_OxcQaa4gAAAE: Session cleaned up.
+[2025-07-20 21:35:50,197] INFO in api: ZUblqOss_AXtc3dGAAAF: Teaching model, nemesis scored: 0
+[2025-07-20 21:38:26,837] INFO in api: WUFQ9qUfg6Jm-fp1AAAB: PLAYER_FIRST_NAME PLAYER_LAST_NAME connected with roles ['User', 'Admin'] in env=Boxing, against 'regular'
+[2025-07-20 21:38:27,006] INFO in api: WUFQ9qUfg6Jm-fp1AAAB: Initializing new models...
+[2025-07-20 21:38:42,459] INFO in api: WUFQ9qUfg6Jm-fp1AAAB: User disconnected...
+[2025-07-20 21:38:42,466] INFO in api: WUFQ9qUfg6Jm-fp1AAAB: Session cleaned up.
+[2025-07-20 21:38:42,468] INFO in api: WUFQ9qUfg6Jm-fp1AAAB: Teaching model, nemesis scored: 0
+[2025-07-20 21:38:47,237] ERROR in api: WUFQ9qUfg6Jm-fp1AAAB: Error updating model for session: The filename must end in `.weights.h5`. Received: filepath=./resources/models/keras/boxing_v2_1_weights.keras
+[2025-07-20 21:39:40,651] INFO in api: r6WRy_5weGUzYGc-AAAB: PLAYER_FIRST_NAME PLAYER_LAST_NAME connected with roles ['User', 'Admin'] in env=Boxing, against 'regular'
+[2025-07-20 21:39:40,829] INFO in api: r6WRy_5weGUzYGc-AAAB: Initializing new models...
+[2025-07-20 21:40:49,448] INFO in api: r6WRy_5weGUzYGc-AAAB: User disconnected...
+[2025-07-20 21:40:49,455] INFO in api: r6WRy_5weGUzYGc-AAAB: Session cleaned up.
+[2025-07-20 21:40:49,456] INFO in api: r6WRy_5weGUzYGc-AAAB: Teaching model, nemesis scored: 10
+[2025-07-20 21:40:54,274] ERROR in api: r6WRy_5weGUzYGc-AAAB: Error updating model for session: The filename must end in `.weights.h5`. Received: filepath=./resources/models/keras/boxing_v2_1_weights.h5
+[2025-07-20 21:40:56,656] INFO in api: SPZLNo--jDTbpwNUAAAD: PLAYER_FIRST_NAME PLAYER_LAST_NAME connected with roles ['User', 'Admin'] in env=Boxing, against 'regular'
+[2025-07-20 21:40:56,823] INFO in api: SPZLNo--jDTbpwNUAAAD: Initializing new models...
+[2025-07-20 21:41:15,854] INFO in api: SPZLNo--jDTbpwNUAAAD: User disconnected...
+[2025-07-20 21:41:15,882] INFO in api: SPZLNo--jDTbpwNUAAAD: Session cleaned up.
+[2025-07-20 21:41:15,883] INFO in api: SPZLNo--jDTbpwNUAAAD: Teaching model, nemesis scored: 3
+[2025-07-20 21:41:17,802] INFO in api: yv1xVElVsJE09rEXAAAF: PLAYER_FIRST_NAME PLAYER_LAST_NAME connected with roles ['User', 'Admin'] in env=Boxing, against 'regular'
+[2025-07-20 21:41:18,021] INFO in api: yv1xVElVsJE09rEXAAAF: Initializing new models...
+[2025-07-20 21:41:22,132] ERROR in api: SPZLNo--jDTbpwNUAAAD: Error updating model for session: The filename must end in `.weights.h5`. Received: filepath=./resources/models/keras/boxing_v2_1_weights.h5
+[2025-07-20 21:41:42,815] INFO in api: yv1xVElVsJE09rEXAAAF: User disconnected...
+[2025-07-20 21:41:42,820] INFO in api: yv1xVElVsJE09rEXAAAF: Session cleaned up.
+[2025-07-20 21:41:42,821] INFO in api: yv1xVElVsJE09rEXAAAF: Teaching model, nemesis scored: 0
+[2025-07-20 21:41:47,750] ERROR in api: yv1xVElVsJE09rEXAAAF: Error updating model for session: The filename must end in `.weights.h5`. Received: filepath=./resources/models/keras/boxing_v2_1_weights.h5
+[2025-07-20 21:42:46,648] INFO in api: stlYxDpcQA0-OeeDAAAB: PLAYER_FIRST_NAME PLAYER_LAST_NAME connected with roles ['User', 'Admin'] in env=Boxing, against 'regular'
+[2025-07-20 21:42:46,821] INFO in api: stlYxDpcQA0-OeeDAAAB: Initializing new models...
+[2025-07-20 21:42:58,561] INFO in api: stlYxDpcQA0-OeeDAAAB: User disconnected...
+[2025-07-20 21:42:58,595] INFO in api: stlYxDpcQA0-OeeDAAAB: Session cleaned up.
+[2025-07-20 21:42:58,596] INFO in api: stlYxDpcQA0-OeeDAAAB: Teaching model, nemesis scored: 2
+[2025-07-20 21:43:03,025] INFO in api: x-uzPuz3ghFOneTtAAAD: PLAYER_FIRST_NAME PLAYER_LAST_NAME connected with roles ['User', 'Admin'] in env=Boxing, against 'regular'
+[2025-07-20 21:43:03,190] INFO in api: x-uzPuz3ghFOneTtAAAD: Initializing new models...
+[2025-07-20 21:43:19,970] INFO in api: x-uzPuz3ghFOneTtAAAD: User disconnected...
+[2025-07-20 21:43:20,003] INFO in api: x-uzPuz3ghFOneTtAAAD: Session cleaned up.
+[2025-07-20 21:43:20,004] INFO in api: x-uzPuz3ghFOneTtAAAD: Teaching model, nemesis scored: 4
+[2025-07-20 21:46:18,499] INFO in api: ccnt-g9-MF_wsHFjAAAB: PLAYER_FIRST_NAME PLAYER_LAST_NAME connected with roles ['User', 'Admin'] in env=Boxing, against 'regular'
+[2025-07-20 21:46:18,668] INFO in api: ccnt-g9-MF_wsHFjAAAB: Initializing new models...
+[2025-07-20 21:46:42,016] INFO in api: ccnt-g9-MF_wsHFjAAAB: User disconnected...
+[2025-07-20 21:46:42,021] INFO in api: ccnt-g9-MF_wsHFjAAAB: Session cleaned up.
+[2025-07-20 21:46:42,022] INFO in api: ccnt-g9-MF_wsHFjAAAB: Teaching model, nemesis scored: 1
+[2025-07-20 21:46:44,931] INFO in api: 3q6K0xb1E4VMd1AEAAAD: PLAYER_FIRST_NAME PLAYER_LAST_NAME connected with roles ['User', 'Admin'] in env=Tennis, against 'regular'
+[2025-07-20 21:46:45,144] INFO in api: 3q6K0xb1E4VMd1AEAAAD: Initializing new models...
+[2025-07-20 21:46:53,620] INFO in api: 3q6K0xb1E4VMd1AEAAAD: User disconnected...
+[2025-07-20 21:46:53,634] INFO in api: 3q6K0xb1E4VMd1AEAAAD: Session cleaned up.
+[2025-07-20 21:46:53,637] INFO in api: 3q6K0xb1E4VMd1AEAAAD: Teaching model, nemesis scored: 1
+[2025-07-20 21:47:01,060] INFO in api: kTDZfgAo_ZM8S2VIAAAF: PLAYER_FIRST_NAME PLAYER_LAST_NAME connected with roles ['User', 'Admin'] in env=Pong, against 'regular'
+[2025-07-20 21:47:01,209] INFO in api: kTDZfgAo_ZM8S2VIAAAF: Initializing new models...
+[2025-07-20 21:47:16,960] INFO in api: kTDZfgAo_ZM8S2VIAAAF: User disconnected...
+[2025-07-20 21:47:16,982] INFO in api: kTDZfgAo_ZM8S2VIAAAF: Session cleaned up.
+[2025-07-20 21:47:16,983] INFO in api: kTDZfgAo_ZM8S2VIAAAF: Teaching model, nemesis scored: 0
+[2025-07-20 21:47:18,182] INFO in api: Qn8GODynKMeeNhwYAAAH: PLAYER_FIRST_NAME PLAYER_LAST_NAME connected with roles ['User', 'Admin'] in env=Boxing, against 'regular'
+[2025-07-20 21:47:18,420] INFO in api: Qn8GODynKMeeNhwYAAAH: Loading existing models $./resources/models/keras/boxing_v2.keras
+[2025-07-20 21:47:21,054] INFO in api: b25quFguy746HnUXAAAJ: PLAYER_FIRST_NAME PLAYER_LAST_NAME connected with roles ['User', 'Admin'] in env=Boxing, against 'regular'
+[2025-07-20 21:47:21,220] INFO in api: b25quFguy746HnUXAAAJ: Loading existing models $./resources/models/keras/boxing_v2.keras
+[2025-07-20 21:47:26,992] INFO in api: tDDgb_tAn4egqX5oAAAL: PLAYER_FIRST_NAME PLAYER_LAST_NAME connected with roles ['User', 'Admin'] in env=Boxing, against 'regular'
+[2025-07-20 21:47:27,155] INFO in api: tDDgb_tAn4egqX5oAAAL: Loading existing models $./resources/models/keras/boxing_v2.keras
+[2025-07-20 21:48:45,691] INFO in api: 2VV60ECXrP7n2VcVAAAC: PLAYER_FIRST_NAME PLAYER_LAST_NAME connected with roles ['User', 'Admin'] in env=Boxing, against 'regular'
+[2025-07-20 21:48:45,699] INFO in api: TJgXuWeiB2EKov0yAAAD: PLAYER_FIRST_NAME PLAYER_LAST_NAME connected with roles ['User', 'Admin'] in env=Boxing, against 'regular'
+[2025-07-20 21:48:45,859] INFO in api: 2VV60ECXrP7n2VcVAAAC: Initializing new models...
+[2025-07-20 21:48:45,865] INFO in api: TJgXuWeiB2EKov0yAAAD: Initializing new models...
+[2025-07-20 21:48:46,213] INFO in api: Tdh39NyTjNUEq1BnAAAF: PLAYER_FIRST_NAME PLAYER_LAST_NAME connected with roles ['User', 'Admin'] in env=Boxing, against 'regular'
+[2025-07-20 21:48:46,456] INFO in api: Tdh39NyTjNUEq1BnAAAF: Initializing new models...
+[2025-07-20 21:48:49,407] INFO in api: TJgXuWeiB2EKov0yAAAD: User disconnected...
+[2025-07-20 21:48:49,410] INFO in api: 2VV60ECXrP7n2VcVAAAC: User disconnected...
+[2025-07-20 21:48:49,410] INFO in api: Tdh39NyTjNUEq1BnAAAF: User disconnected...
+[2025-07-20 21:48:49,425] INFO in api: Tdh39NyTjNUEq1BnAAAF: Session cleaned up.
+[2025-07-20 21:48:49,435] INFO in api: Tdh39NyTjNUEq1BnAAAF: Teaching model, nemesis scored: 0
+[2025-07-20 21:48:49,449] INFO in api: 2VV60ECXrP7n2VcVAAAC: Session cleaned up.
+[2025-07-20 21:48:49,450] INFO in api: TJgXuWeiB2EKov0yAAAD: Session cleaned up.
+[2025-07-20 21:48:50,246] INFO in api: 2VV60ECXrP7n2VcVAAAC: Teaching model, nemesis scored: 0
+[2025-07-20 21:48:50,928] INFO in api: TJgXuWeiB2EKov0yAAAD: Teaching model, nemesis scored: 0
+[2025-07-20 21:48:55,784] INFO in api: s2isa5jIkHR4JT2LAAAH: PLAYER_FIRST_NAME PLAYER_LAST_NAME connected with roles ['User', 'Admin'] in env=Boxing, against 'regular'
+[2025-07-20 21:48:55,950] INFO in api: s2isa5jIkHR4JT2LAAAH: Loading existing models $./resources/models/keras/boxing_v2.keras
+[2025-07-20 21:49:42,782] INFO in api: d5dkmp_mmqsfDjuqAAAB: PLAYER_FIRST_NAME PLAYER_LAST_NAME connected with roles ['User', 'Admin'] in env=Boxing, against 'regular'
+[2025-07-20 21:49:42,958] INFO in api: d5dkmp_mmqsfDjuqAAAB: Loading existing models $./resources/models/keras/boxing_v2.keras
+[2025-07-20 21:49:44,832] INFO in api: d5dkmp_mmqsfDjuqAAAB: User disconnected...
+[2025-07-20 21:49:44,833] ERROR in api: d5dkmp_mmqsfDjuqAAAB: Error updating model for session: 'NoneType' object has no attribute 'env_config'
+[2025-07-20 21:49:46,822] INFO in api: fPHtWD4X40Bqb-BaAAAD: PLAYER_FIRST_NAME PLAYER_LAST_NAME connected with roles ['User', 'Admin'] in env=Boxing, against 'regular'
+[2025-07-20 21:49:46,990] INFO in api: fPHtWD4X40Bqb-BaAAAD: Loading existing models $./resources/models/keras/boxing_v2.keras
+[2025-07-20 21:50:53,696] INFO in api: zEsSX0ldDMiwOdzWAAAB: PLAYER_FIRST_NAME PLAYER_LAST_NAME connected with roles ['User', 'Admin'] in env=Boxing, against 'regular'
+[2025-07-20 21:50:53,870] INFO in api: zEsSX0ldDMiwOdzWAAAB: Loading existing models $./resources/models/keras/boxing_v2.keras
+[2025-07-20 21:50:56,968] INFO in api: 0zSJ-ILoUlOhAjICAAAD: PLAYER_FIRST_NAME PLAYER_LAST_NAME connected with roles ['User', 'Admin'] in env=Boxing, against 'regular'
+[2025-07-20 21:50:57,144] INFO in api: 0zSJ-ILoUlOhAjICAAAD: Loading existing models $./resources/models/keras/boxing_v2.keras
+[2025-07-20 21:51:12,199] INFO in api: 0zSJ-ILoUlOhAjICAAAD: User disconnected...
+[2025-07-20 21:51:12,205] INFO in api: 0zSJ-ILoUlOhAjICAAAD: Session cleaned up.
+[2025-07-20 21:51:12,206] INFO in api: 0zSJ-ILoUlOhAjICAAAD: Teaching model, nemesis scored: 4
+[2025-07-20 21:51:27,215] INFO in api: J5TUhglglJP2qTh7AAAF: PLAYER_FIRST_NAME PLAYER_LAST_NAME connected with roles ['User', 'Admin'] in env=Boxing, against 'regular'
+[2025-07-20 21:51:27,403] INFO in api: J5TUhglglJP2qTh7AAAF: Loading existing models $./resources/models/keras/boxing_v2.keras
+[2025-07-20 21:51:38,793] INFO in api: zEsSX0ldDMiwOdzWAAAB: User disconnected...
+[2025-07-20 21:52:16,250] INFO in api: J5TUhglglJP2qTh7AAAF: User disconnected...
+[2025-07-20 21:52:16,261] INFO in api: J5TUhglglJP2qTh7AAAF: Session cleaned up.
+[2025-07-20 21:52:16,262] INFO in api: J5TUhglglJP2qTh7AAAF: Teaching model, nemesis scored: 0
+[2025-07-20 21:52:38,520] INFO in api: GgysSCz8KR6U9T8bAAAH: PLAYER_FIRST_NAME PLAYER_LAST_NAME connected with roles ['User', 'Admin'] in env=Boxing, against 'regular'
+[2025-07-20 21:52:38,685] INFO in api: GgysSCz8KR6U9T8bAAAH: Loading existing models $./resources/models/keras/boxing_v2.keras
+[2025-07-20 21:53:06,279] INFO in api: GgysSCz8KR6U9T8bAAAH: User disconnected...
+[2025-07-20 21:53:06,311] INFO in api: GgysSCz8KR6U9T8bAAAH: Session cleaned up.
+[2025-07-20 21:53:06,314] INFO in api: GgysSCz8KR6U9T8bAAAH: Teaching model, nemesis scored: 3
+[2025-07-20 21:53:14,775] INFO in api: y1JQnvMoIUnG2g0eAAAJ: PLAYER_FIRST_NAME PLAYER_LAST_NAME connected with roles ['User', 'Admin'] in env=Boxing, against 'regular'
+[2025-07-20 21:53:14,942] INFO in api: y1JQnvMoIUnG2g0eAAAJ: Loading existing models $./resources/models/keras/boxing_v2.keras
+[2025-07-20 21:53:52,417] INFO in api: y1JQnvMoIUnG2g0eAAAJ: User disconnected...
+[2025-07-20 21:53:52,426] INFO in api: y1JQnvMoIUnG2g0eAAAJ: Session cleaned up.
+[2025-07-20 21:53:52,427] INFO in api: y1JQnvMoIUnG2g0eAAAJ: Teaching model, nemesis scored: 8
+[2025-07-20 21:54:19,437] INFO in api: DpVgjRSZdBQBoHjdAAAL: PLAYER_FIRST_NAME PLAYER_LAST_NAME connected with roles ['User', 'Admin'] in env=Tennis, against 'regular'
+[2025-07-20 21:54:19,598] INFO in api: DpVgjRSZdBQBoHjdAAAL: Initializing new models...
+[2025-07-20 21:54:49,370] INFO in api: DpVgjRSZdBQBoHjdAAAL: User disconnected...
+[2025-07-20 21:54:49,374] INFO in api: DpVgjRSZdBQBoHjdAAAL: Session cleaned up.
+[2025-07-20 21:54:49,375] INFO in api: DpVgjRSZdBQBoHjdAAAL: Teaching model, nemesis scored: 4
+[2025-07-20 21:55:00,724] INFO in api: iBJNElMloHDd3JYXAAAN: PLAYER_FIRST_NAME PLAYER_LAST_NAME connected with roles ['User', 'Admin'] in env=Tennis, against 'regular'
+[2025-07-20 21:55:00,883] INFO in api: iBJNElMloHDd3JYXAAAN: Loading existing models $./resources/models/keras/tennis_v3.keras
+[2025-07-20 21:55:10,346] INFO in api: iBJNElMloHDd3JYXAAAN: User disconnected...
+[2025-07-20 21:55:10,351] INFO in api: iBJNElMloHDd3JYXAAAN: Session cleaned up.
+[2025-07-20 21:55:10,353] INFO in api: iBJNElMloHDd3JYXAAAN: Teaching model, nemesis scored: -1

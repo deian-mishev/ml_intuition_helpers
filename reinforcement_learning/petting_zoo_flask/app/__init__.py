@@ -10,6 +10,5 @@ app.logger = logger
 app.secret_key = FLASK_KEY
 
 socketio = SocketIO(app, async_mode="threading", cors_allowed_origins="*")
-global_lock = threading.Lock()
 client_sessions_lock = threading.Lock()
 client_sessions = {}

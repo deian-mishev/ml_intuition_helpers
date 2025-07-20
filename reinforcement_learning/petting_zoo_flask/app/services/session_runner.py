@@ -8,11 +8,10 @@ from app.services.ml_service import ml_service
 from app.config.env_config import HUMAN_AGENT_NAME, INPUT_TIMEOUT, EPSILON
 
 class SessionRunner:
-    def __init__(self, sid: str, session: SessionState, socketio: SocketIO, global_lock: threading.Lock):
+    def __init__(self, sid: str, session: SessionState, socketio: SocketIO):
         self.sid = sid
         self.session = session
         self.socketio = socketio
-        self.global_lock = global_lock
         self._stop_event = threading.Event()
         self.thread = threading.Thread(target=self._run_loop)
         self.thread.daemon = True
@@ -39,8 +38,8 @@ class SessionRunner:
                     with self.session.lock:
                         action = self.session.action_queue.popleft() if self.session.action_queue else 0
                 else:
-                    with self.global_lock:
-                        q_values = self.session.env_config.q_network(tf.expand_dims(self.session.state, 0))
+                    with self.session.lock:
+                        q_values = self.session.q_network(tf.expand_dims(self.session.state, 0))
                     action = ml_service.get_action(q_values, EPSILON, self.session.env_config.num_actions)
 
                 self.session.memory_buffer.append(Experience(

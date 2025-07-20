@@ -4,10 +4,10 @@ import threading
 from collections import deque, namedtuple
 from app.config.env_config import MEMORY_SIZE
 from app.config.ml_env_config import EnvironmentConfig
+import tensorflow as tf
 
 if TYPE_CHECKING:
     from app.services.session_runner import SessionRunner
-
 
 @dataclass
 class SessionState:
@@ -18,11 +18,14 @@ class SessionState:
     agent_iter: Optional[object] = None
     current_agent: Optional[object] = None
     runner: Optional["SessionRunner"] = None
+    q_network: Optional[tf.keras.Model] = None
+    target_q_network: Optional[tf.keras.Model] = None
     nemesis_total_reward: int = field(default=0)
     action_queue: deque = field(default_factory=deque)
     lock: threading.Lock = field(default_factory=threading.Lock)
     memory_buffer: deque = field(
         default_factory=lambda: deque(maxlen=MEMORY_SIZE))
+    optimizer: Optional[tf.keras.optimizers.Optimizer] = None
 
 
 Experience = namedtuple("Experience", field_names=[

@@ -3,7 +3,7 @@ from flask_socketio import disconnect
 import tensorflow as tf
 from flask import request, jsonify, session
 
-from app import app, socketio, global_lock, client_sessions, client_sessions_lock
+from app import app, socketio, client_sessions, client_sessions_lock
 from app.services.ml_service import ml_service
 from app.services.session_runner import SessionRunner
 from app.config.session_state import SessionState
@@ -58,43 +58,43 @@ def on_connect():
     current_agent = next(agent_iter)
     state, _, _, _, _ = env.last()
 
-    with global_lock:
-        if env_config.q_network is None:
-            num_actions = env_config.num_actions
-            if os.path.exists(env_config.model_path) and os.path.exists(env_config.weights_path):
-                app.logger.info(
-                    f"{sid}: Loading existing models ${env_config.model_path}")
-                env_config.q_network = tf.keras.models.load_model(
-                    env_config.model_path)
-                env_config.target_q_network = tf.keras.models.load_model(
-                    env_config.weights_path)
-                env_config.optimizer = tf.keras.optimizers.Adam(
-                    learning_rate=ALPHA)
-            else:
-                app.logger.info(f"{sid}: Initializing new models...")
-                obs_shape = env_config.observation_space
-                env_config.q_network = ml_service.build_q_network(
-                    obs_shape, num_actions)
-                env_config.target_q_network = ml_service.build_q_network(
-                    obs_shape, num_actions)
-                env_config.optimizer = tf.keras.optimizers.Adam(
-                    learning_rate=ALPHA)
-                dummy_input = tf.zeros((1, *obs_shape), dtype=tf.float32)
-                _ = env_config.q_network(dummy_input)
-                _ = env_config.target_q_network(dummy_input)
-                env_config.target_q_network.set_weights(
-                    env_config.q_network.get_weights())
-            zero_grads = [tf.zeros_like(
-                v) for v in env_config.q_network.trainable_variables]
-            env_config.optimizer.apply_gradients(
-                zip(zero_grads, env_config.q_network.trainable_variables))
-
-    session_state = SessionState(
+    session_state: SessionState = SessionState(
         user=user,
         env_config=env_config,
         env=env,
         state=state
     )
+
+    num_actions = env_config.num_actions
+    obs_shape = env_config.observation_space
+    if os.path.exists(env_config.model_path) and os.path.exists(env_config.weights_path):
+        app.logger.info(
+            f"{sid}: Loading existing models ${env_config.model_path}")
+        session_state.q_network = tf.keras.models.load_model(
+            env_config.model_path)
+        session_state.target_q_network = ml_service.build_q_network(obs_shape, num_actions)
+        session_state.target_q_network.load_weights(session_state.env_config.weights_path)
+        session_state.optimizer = session_state.q_network.optimizer
+    else:
+        app.logger.info(f"{sid}: Initializing new models...")   
+        session_state.q_network = ml_service.build_q_network(
+            obs_shape, num_actions)
+        session_state.target_q_network = ml_service.build_q_network(
+            obs_shape, num_actions)
+        session_state.optimizer = tf.keras.optimizers.Adam(
+            learning_rate=ALPHA)
+        dummy_input = tf.zeros((1, *obs_shape), dtype=tf.float32)
+        _ = session_state.q_network(dummy_input)
+        _ = session_state.target_q_network(dummy_input)
+        session_state.target_q_network.set_weights(
+            session_state.q_network.get_weights())
+        session_state.q_network.compile(
+            optimizer=session_state.optimizer, loss='mse')
+    zero_grads = [tf.zeros_like(
+        v) for v in session_state.q_network.trainable_variables]
+    session_state.optimizer.apply_gradients(
+        zip(zero_grads, session_state.q_network.trainable_variables))
+
     session_state.agent_iter = agent_iter
     session_state.current_agent = current_agent
 
@@ -102,7 +102,7 @@ def on_connect():
         client_sessions[sid] = session_state
 
     session_state.runner = SessionRunner(
-        sid, session_state, socketio, global_lock)
+        sid, session_state, socketio)
     session_state.runner.start()
 
 
@@ -110,7 +110,7 @@ def on_connect():
 def on_input(keys: list[str]):
     sid = request.sid
     with client_sessions_lock:
-        session = client_sessions.get(sid)
+        session: SessionState = client_sessions.get(sid)
 
     if session is None:
         return
@@ -129,7 +129,7 @@ def on_disconnect():
     sid = request.sid
     app.logger.info(f"{sid}: User disconnected...")
     with client_sessions_lock:
-        session = client_sessions.pop(sid, None)
+        session: SessionState = client_sessions.pop(sid, None)
 
     if session:
         if session.runner:
@@ -141,7 +141,7 @@ def on_disconnect():
 
         app.logger.info(f"{sid}: Session cleaned up.")
     try:
-        with global_lock:
+        with session.env_config.lock:
             app.logger.info(
                 f"{sid}: Teaching model, nemesis scored: {session.nemesis_total_reward}")
             for _ in range(10):
@@ -149,8 +149,8 @@ def on_disconnect():
 
             session.env_config.epsilon = ml_service.get_new_eps(
                 session.env_config.epsilon)
-            session.env_config.q_network.save(session.env_config.model_path)
-            session.env_config.target_q_network.save(
+            session.q_network.save(session.env_config.model_path)
+            session.target_q_network.save_weights(
                 session.env_config.weights_path)
     except Exception as e:
         app.logger.error(f"{sid}: Error updating model for session: {e}")

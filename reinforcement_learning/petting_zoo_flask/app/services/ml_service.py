@@ -22,9 +22,9 @@ class MLService:
         self.agent_learn(
             experiences,
             GAMMA,
-            session.env_config.target_q_network,
-            session.env_config.optimizer,
-            session.env_config.q_network,
+            session.target_q_network,
+            session.optimizer,
+            session.q_network,
         )
 
     def build_q_network(self, input_shape, num_actions):
