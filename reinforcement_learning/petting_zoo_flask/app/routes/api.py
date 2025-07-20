@@ -7,25 +7,20 @@ from app import app, socketio, client_sessions, client_sessions_lock
 from app.services.ml_service import ml_service
 from app.services.session_runner import SessionRunner
 from app.config.session_state import SessionState
-from app.config.ml_env_config import EnvironmentConfig, ENVIRONMENTS
+from app.config.ml_env_config import EnvironmentConfig, ENVIRONMENTS, get_available_environments_nemesis
 from app.config.env_config import *
 from app.config.oauth2_config import login_required, roles_required
 from flask import render_template
-
-AI_PLAYERS = ["regular", "atari_pro"]
-
 
 @app.route('/preconnect', methods=['GET'])
 @login_required
 @roles_required('User')
 def preconnect():
-    environments_list = list(ENVIRONMENTS.keys())
-
+    available_envs, available_nemesis = get_available_environments_nemesis()
     return jsonify({
-        "environments": environments_list,
-        "ai_players": AI_PLAYERS
+        "environments": available_envs,
+        "ai_players": available_nemesis
     })
-
 
 @socketio.on('connect')
 def on_connect():
@@ -39,7 +34,10 @@ def on_connect():
     sid = request.sid
     env_name = request.args.get("env")
     ai_player = request.args.get("ai_player")
-    if env_name not in ENVIRONMENTS or ai_player not in AI_PLAYERS:
+
+    available_envs, available_players = get_available_environments_nemesis()
+
+    if env_name not in available_envs or ai_player not in available_players:
         disconnect()
         return
 
@@ -49,9 +47,10 @@ def on_connect():
     env_config: EnvironmentConfig = ENVIRONMENTS[env_name]
     env = env_config.env()
 
-    if ai_player == 'atari_pro':
-        env_config.model_path = ATARI_PRO
-        env_config.weights_path = ATARI_PRO_WEIGHTS
+    # if ai_player == 'atari_pro':
+    #     env_config.model_path = ATARI_PRO
+    #     env_config.weights_path = ATARI_PRO_WEIGHTS
+    #     env_config.lock = ATARI_PRO_LOCK
 
     env.reset()
     agent_iter = iter(env.agent_iter())

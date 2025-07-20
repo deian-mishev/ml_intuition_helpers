@@ -1,4 +1,5 @@
 import os
+import threading
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -26,3 +27,4 @@ INPUT_TIMEOUT = 0.008
 
 ATARI_PRO = "./models/keras/atari_pro.keras"
 ATARI_PRO_WEIGHTS = "./models/keras/atari_pro_weights.weights.h5"
+ATARI_PRO_LOCK = threading.Lock()

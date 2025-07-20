@@ -3,7 +3,9 @@ import threading
 from pettingzoo.atari import boxing_v2, space_invaders_v2, tennis_v3, double_dunk_v3, ice_hockey_v2, mario_bros_v3, pong_v3, wizard_of_wor_v3
 from dataclasses import dataclass, field
 from typing import Optional, Callable
-from app.config.env_config import EPSILON
+from app.config.env_config import EPSILON, ATARI_PRO
+from app import client_sessions_lock, client_sessions
+
 
 @dataclass
 class EnvironmentConfig:
@@ -15,6 +17,14 @@ class EnvironmentConfig:
     epsilon: float = EPSILON
     env: Optional[Callable] = field(default=None)
     lock: threading.Lock = field(default_factory=threading.Lock)
+
+def get_available_environments_nemesis():
+    with client_sessions_lock:
+        active_env_names = {
+            next(name for name, cfg in ENVIRONMENTS.items() if cfg == session.env_config)
+            for session in client_sessions.values()
+        }
+    return [env for env in ENVIRONMENTS.keys() if env not in active_env_names], ["regular"]
 
 ENVIRONMENTS = {
     'Boxing': EnvironmentConfig(
