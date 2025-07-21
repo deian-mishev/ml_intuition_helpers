@@ -5,6 +5,7 @@ from flask import request, jsonify, session
 
 from app import app, socketio, client_sessions, client_sessions_lock
 from app.services.ml_service import ml_service
+from app.services.experience_store import experience_service
 from app.services.session_runner import SessionRunner
 from app.config.session_state import SessionState
 from app.config.ml_env_config import EnvironmentConfig, ENVIRONMENTS, get_available_environments_nemesis
@@ -110,17 +111,14 @@ def on_input(keys: list[str]):
     sid = request.sid
     with client_sessions_lock:
         session: SessionState = client_sessions.get(sid)
-
-    if session is None:
-        return
-
-    with session.lock:
-        for key in keys:
-            action = session.env_config.KEY_MAP.get(key)
-            if action is not None:
-                session.action_queue.append(action)
-            else:
-                session.action_queue.append(0)
+        if session is not None:
+            with session.lock:
+                for key in keys:
+                    action = session.env_config.KEY_MAP.get(key)
+                    if action is not None:
+                        session.action_queue.append(action)
+                    else:
+                        session.action_queue.append(0)
 
 
 @socketio.on('disconnect')
@@ -139,20 +137,27 @@ def on_disconnect():
             app.logger.error(f"{sid}: Error closing env for session: {e}")
 
         app.logger.info(f"{sid}: Session cleaned up.")
-    try:
-        with session.env_config.lock:
-            app.logger.info(
-                f"{sid}: Teaching model, nemesis scored: {session.nemesis_total_reward}")
-            for _ in range(10):
-                ml_service.train_step(session)
+        app.logger.info(
+                f"{sid}: Nemesis scored: {session.nemesis_total_reward}")
+        experience_service.insert_experience_batch(
+            env_name=session.env_config.name,
+            experiences=list(session.memory_buffer)
+        )
+        app.logger.info(f"{sid}: Stored {len(session.memory_buffer)} experiences for {session.env_config.name}")
+    # try:
+    #     with session.env_config.lock:
+    #         app.logger.info(
+    #             f"{sid}: Teaching model, nemesis scored: {session.nemesis_total_reward}")
+    #         for _ in range(10):
+    #             ml_service.train_step(session)
 
-            session.env_config.epsilon = ml_service.get_new_eps(
-                session.env_config.epsilon)
-            session.q_network.save(session.env_config.model_path)
-            session.target_q_network.save_weights(
-                session.env_config.weights_path)
-    except Exception as e:
-        app.logger.error(f"{sid}: Error updating model for session: {e}")
+    #         session.env_config.epsilon = ml_service.get_new_eps(
+    #             session.env_config.epsilon)
+    #         session.q_network.save(session.env_config.model_path)
+    #         session.target_q_network.save_weights(
+    #             session.env_config.weights_path)
+    # except Exception as e:
+    #     app.logger.error(f"{sid}: Error updating model for session: {e}")
 
 
 @app.route('/', defaults={'path': ''})

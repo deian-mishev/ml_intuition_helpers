@@ -9,8 +9,9 @@ import tensorflow as tf
 random.seed(SEED)
 tf.random.set_seed(SEED)
 
-
 class MLService:
+    _instance = None
+
     def __init__(self):
         pass
 

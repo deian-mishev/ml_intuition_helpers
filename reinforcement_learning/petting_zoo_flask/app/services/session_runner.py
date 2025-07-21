@@ -1,4 +1,4 @@
-import threading
+import eventlet
 import tensorflow as tf
 from flask_socketio import SocketIO
 from app import app
@@ -12,20 +12,19 @@ class SessionRunner:
         self.sid = sid
         self.session = session
         self.socketio = socketio
-        self._stop_event = threading.Event()
-        self.thread = threading.Thread(target=self._run_loop)
-        self.thread.daemon = True
+        self._stop_event = eventlet.event.Event()
+        self._running_greenlet = None
 
     def start(self):
-        self.thread.start()
+        self._running_greenlet = eventlet.spawn(self._run_loop)
 
     def stop(self):
-        self._stop_event.set()
-        if self.thread.is_alive():
-            self.thread.join(timeout=1.0)
+        self._stop_event.send()
+        if self._running_greenlet:
+            self._running_greenlet.wait()
 
     def _should_stop(self):
-        return self._stop_event.is_set()
+        return self._stop_event.ready()
 
     def _run_loop(self):
         while not self._should_stop():
@@ -59,6 +58,6 @@ class SessionRunner:
                 self.socketio.emit('frame', frame, room=self.sid)
                 self.session.state = obs
             except Exception as e:
-                app.logger.error(f"{self.sid}: Error emitting frame:", e)
+                app.logger.error(f"{self.sid}: Error emitting frame: {e}")
 
             self.socketio.sleep(INPUT_TIMEOUT)

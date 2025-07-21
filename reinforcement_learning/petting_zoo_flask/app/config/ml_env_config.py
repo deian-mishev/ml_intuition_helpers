@@ -1,14 +1,14 @@
 from typing import Optional
-import threading
+import eventlet
 from pettingzoo.atari import boxing_v2, space_invaders_v2, tennis_v3, double_dunk_v3, ice_hockey_v2, mario_bros_v3, pong_v3, wizard_of_wor_v3
 from dataclasses import dataclass, field
 from typing import Optional, Callable
 from app.config.env_config import EPSILON, ATARI_PRO
 from app import client_sessions_lock, client_sessions
 
-
 @dataclass
 class EnvironmentConfig:
+    name: str
     KEY_MAP: dict
     model_path: str
     weights_path: str
@@ -16,7 +16,7 @@ class EnvironmentConfig:
     observation_space: tuple[int, ...]
     epsilon: float = EPSILON
     env: Optional[Callable] = field(default=None)
-    lock: threading.Lock = field(default_factory=threading.Lock)
+    lock: eventlet.semaphore.Semaphore = field(default_factory=eventlet.semaphore.Semaphore)
 
 def get_available_environments_nemesis():
     with client_sessions_lock:
@@ -28,6 +28,7 @@ def get_available_environments_nemesis():
 
 ENVIRONMENTS = {
     'Boxing': EnvironmentConfig(
+        name='boxing_v2',
         KEY_MAP={
             "0": 0, "s": 1, "8": 2, "6": 3, "4": 4, "2": 5,
             "9": 6, "7": 7, "3": 8, "1": 9, "w": 10, "d": 11,
@@ -41,6 +42,7 @@ ENVIRONMENTS = {
         observation_space=(210, 160, 3)
     ),
     "Tennis": EnvironmentConfig(
+        name='tennis_v3',
         KEY_MAP={
             "8": 2, "6": 3, "4": 4,
             "2": 5, "9": 6, "7": 7,
@@ -57,6 +59,7 @@ ENVIRONMENTS = {
         observation_space=(210, 160, 3)
     ),
     'Wizard of War': EnvironmentConfig(
+        name='wizard_of_wor_v3',
         KEY_MAP={
             "8": 1, "6": 2, "4": 3,
             "2": 4, "9": 5, "7": 6,
@@ -70,6 +73,7 @@ ENVIRONMENTS = {
         observation_space=(210, 160, 3)
     ),
     'Mario Bros': EnvironmentConfig(
+        name='mario_bros_v3',
         KEY_MAP={
             "8": 2, "6": 3, "4": 4,
             "2": 5, "9": 6, "7": 7,
@@ -86,6 +90,7 @@ ENVIRONMENTS = {
         observation_space=(210, 160, 3)
     ),
     'Ice Hockey': EnvironmentConfig(
+        name='ice_hockey_v2',
         KEY_MAP={
             "8": 2, "6": 3, "4": 4,
             "2": 5, "9": 6, "7": 7,
@@ -102,6 +107,7 @@ ENVIRONMENTS = {
         observation_space=(210, 160, 3)
     ),
     'Double Dunk': EnvironmentConfig(
+        name='double_dunk_v3',
         KEY_MAP={
             "8": 2, "6": 3, "4": 4,
             "2": 5, "9": 6, "7": 7,
@@ -118,6 +124,7 @@ ENVIRONMENTS = {
         observation_space=(210, 160, 3)
     ),
     'Pong': EnvironmentConfig(
+        name='pong_v3_model',
         KEY_MAP={
             "4": 3, "6": 2, "s": 1
         },
@@ -129,6 +136,7 @@ ENVIRONMENTS = {
         observation_space=(210, 160, 3)
     ),
     "Space Invaders": EnvironmentConfig(
+        name='space_invaders_v2',
         KEY_MAP={
             "8": 2, "6": 4, "4": 3, "2": 5, "s": 1
         },

@@ -1,13 +1,17 @@
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Optional
-import threading
+from typing import TYPE_CHECKING, Deque, Optional
 from collections import deque, namedtuple
+
+import eventlet
 from app.config.env_config import MEMORY_SIZE
 from app.config.ml_env_config import EnvironmentConfig
 import tensorflow as tf
 
 if TYPE_CHECKING:
     from app.services.session_runner import SessionRunner
+
+Experience = namedtuple("Experience", field_names=[
+                        "state", "action", "reward", "next_state", "done"])
 
 @dataclass
 class SessionState:
@@ -22,11 +26,8 @@ class SessionState:
     target_q_network: Optional[tf.keras.Model] = None
     nemesis_total_reward: int = field(default=0)
     action_queue: deque = field(default_factory=deque)
-    lock: threading.Lock = field(default_factory=threading.Lock)
-    memory_buffer: deque = field(
-        default_factory=lambda: deque(maxlen=MEMORY_SIZE))
+    lock: eventlet.semaphore.Semaphore = field(default_factory=eventlet.semaphore.Semaphore)
+    memory_buffer: Deque[Experience] = field(
+        default_factory=lambda: deque(maxlen=MEMORY_SIZE)
+    )
     optimizer: Optional[tf.keras.optimizers.Optimizer] = None
-
-
-Experience = namedtuple("Experience", field_names=[
-                        "state", "action", "reward", "next_state", "done"])
