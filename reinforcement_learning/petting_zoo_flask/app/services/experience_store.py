@@ -1,6 +1,7 @@
 from pymongo import ASCENDING
 from app.config.persistance_config import experiences_collection
 from app.config.session_state import Experience
+from datetime import datetime, timezone
 
 class ExperienceService:
     def __init__(self):
@@ -16,7 +17,7 @@ class ExperienceService:
             "reward": float(experience.reward),
             "next_state": experience.next_state.tolist(),
             "done": bool(experience.done),
-            "timestamp": experience.timestamp
+            "timestamp": datetime.now(timezone.utc)
         }
         self.collection.insert_one(doc)
         self.enforce_limit(env_name)

@@ -1,4 +1,3 @@
-from datetime import datetime, timezone
 import eventlet
 import tensorflow as tf
 from flask_socketio import SocketIO
@@ -46,9 +45,8 @@ class SessionRunner:
                 experience_service.insert_experience(
                     env_name=self.session.env_config.name,
                     experience=Experience(
-                        self.session.env_config.name,
                         self.session.state, action, reward, obs,
-                        done, datetime.now(timezone.utc))
+                        done)
                 )
 
                 if done:
