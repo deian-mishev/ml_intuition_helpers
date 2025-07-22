@@ -5,7 +5,6 @@ from flask import request, jsonify, session
 
 from app import app, socketio, client_sessions, client_sessions_lock
 from app.services.ml_service import ml_service
-from app.services.experience_store import experience_service
 from app.services.session_runner import SessionRunner
 from app.config.session_state import SessionState
 from app.config.ml_env_config import EnvironmentConfig, ENVIRONMENTS, get_available_environments_nemesis
@@ -116,10 +115,10 @@ def on_input(keys: list[str]):
                 for key in keys:
                     action = session.env_config.KEY_MAP.get(key)
                     if action is not None:
-                        session.action_queue.append(action)
-                    else:
-                        session.action_queue.append(0)
-
+                        session.current_action = action
+                        break
+                else:
+                    session.current_action = 0
 
 @socketio.on('disconnect')
 def on_disconnect():
@@ -139,11 +138,8 @@ def on_disconnect():
         app.logger.info(f"{sid}: Session cleaned up.")
         app.logger.info(
                 f"{sid}: Nemesis scored: {session.nemesis_total_reward}")
-        experience_service.insert_experience_batch(
-            env_name=session.env_config.name,
-            experiences=list(session.memory_buffer)
-        )
-        app.logger.info(f"{sid}: Stored {len(session.memory_buffer)} experiences for {session.env_config.name}")
+    
+        app.logger.info(f"{sid}: Stored experiences for {session.env_config.name}")
     # try:
     #     with session.env_config.lock:
     #         app.logger.info(

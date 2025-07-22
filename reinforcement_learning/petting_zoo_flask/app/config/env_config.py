@@ -11,7 +11,6 @@ AGENT_VID_WIDTH = os.getenv("AGENT_VID_WIDTH")
 SEED = 0                        # seed for the pseudo-random number generator.
 MINIBATCH_SIZE = 128            # mini-batch size.
 TAU = 1e-3                      # soft update parameter.
-MEMORY_SIZE = 10_000            # size of memory buffer
 GAMMA = 0.997                   # discount factor
 ALPHA = 1e-3                    # learning rate
 HUMAN_AGENT_NAME = 'first_0'    # human agent selected identifier

@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 import eventlet
 import tensorflow as tf
 from flask_socketio import SocketIO
@@ -6,6 +7,7 @@ from app.config.session_state import SessionState, Experience
 from app.services.rendering_service import render_frame
 from app.services.ml_service import ml_service
 from app.config.env_config import HUMAN_AGENT_NAME, INPUT_TIMEOUT, EPSILON
+from app.services.experience_store import experience_service
 
 class SessionRunner:
     def __init__(self, sid: str, session: SessionState, socketio: SocketIO):
@@ -35,14 +37,19 @@ class SessionRunner:
                 if self.session.current_agent == HUMAN_AGENT_NAME:
                     self.session.nemesis_total_reward += reward
                     with self.session.lock:
-                        action = self.session.action_queue.popleft() if self.session.action_queue else 0
+                        action = self.session.current_action
                 else:
                     with self.session.lock:
                         q_values = self.session.q_network(tf.expand_dims(self.session.state, 0))
                     action = ml_service.get_action(q_values, EPSILON, self.session.env_config.num_actions)
 
-                self.session.memory_buffer.append(Experience(
-                    self.session.state, action, reward, obs, done))
+                experience_service.insert_experience(
+                    env_name=self.session.env_config.name,
+                    experience=Experience(
+                        self.session.env_config.name,
+                        self.session.state, action, reward, obs,
+                        done, datetime.now(timezone.utc))
+                )
 
                 if done:
                     self.session.env.reset()
