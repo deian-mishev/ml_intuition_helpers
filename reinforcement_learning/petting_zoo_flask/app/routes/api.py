@@ -5,6 +5,7 @@ from flask import request, jsonify, session
 
 from app import app, socketio, client_sessions, client_sessions_lock
 from app.services.ml_service import ml_service
+from app.services.experience_store import experience_service
 from app.services.session_runner import SessionRunner
 from app.config.session_state import SessionState
 from app.config.ml_env_config import EnvironmentConfig, ENVIRONMENTS, get_available_environments_nemesis
@@ -56,16 +57,17 @@ def on_connect():
     agent_iter = iter(env.agent_iter())
     current_agent = next(agent_iter)
     state, _, _, _, _ = env.last()
+    num_actions = env_config.num_actions
+    obs_shape = env_config.observation_space
 
     session_state: SessionState = SessionState(
         user=user,
         env_config=env_config,
         env=env,
-        state=state
+        state=ml_service.preprocess_state(obs_shape, state)
     )
 
-    num_actions = env_config.num_actions
-    obs_shape = env_config.observation_space
+ 
     if os.path.exists(env_config.model_path) and os.path.exists(env_config.weights_path):
         app.logger.info(
             f"{sid}: Loading existing models ${env_config.model_path}")
@@ -138,22 +140,27 @@ def on_disconnect():
         app.logger.info(f"{sid}: Session cleaned up.")
         app.logger.info(
                 f"{sid}: Nemesis scored: {session.nemesis_total_reward}")
-    
-        app.logger.info(f"{sid}: Stored experiences for {session.env_config.name}")
-    # try:
-    #     with session.env_config.lock:
-    #         app.logger.info(
-    #             f"{sid}: Teaching model, nemesis scored: {session.nemesis_total_reward}")
-    #         for _ in range(10):
-    #             ml_service.train_step(session)
 
-    #         session.env_config.epsilon = ml_service.get_new_eps(
-    #             session.env_config.epsilon)
-    #         session.q_network.save(session.env_config.model_path)
-    #         session.target_q_network.save_weights(
-    #             session.env_config.weights_path)
-    # except Exception as e:
-    #     app.logger.error(f"{sid}: Error updating model for session: {e}")
+        socketio.start_background_task(
+            experience_service.insert_experience_batch,
+            env_name=session.env_config.name,
+            experiences=list(session.memory_buffer),
+            sid=sid
+        )
+    try:
+        with session.env_config.lock:
+            app.logger.info(
+                f"{sid}: Teaching model, nemesis scored: {session.nemesis_total_reward}")
+            for _ in range(10):
+                ml_service.train_step(session)
+
+            session.env_config.epsilon = ml_service.get_new_eps(
+                session.env_config.epsilon)
+            session.q_network.save(session.env_config.model_path)
+            session.target_q_network.save_weights(
+                session.env_config.weights_path)
+    except Exception as e:
+        app.logger.error(f"{sid}: Error updating model for session: {e}")
 
 
 @app.route('/', defaults={'path': ''})

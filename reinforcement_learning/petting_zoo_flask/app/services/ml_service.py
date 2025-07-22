@@ -1,4 +1,5 @@
 
+import cv2
 from app.config.env_config import *
 from app.config.session_state import SessionState
 
@@ -8,6 +9,7 @@ import tensorflow as tf
 
 random.seed(SEED)
 tf.random.set_seed(SEED)
+
 
 class MLService:
     _instance = None
@@ -27,6 +29,13 @@ class MLService:
             session.optimizer,
             session.q_network,
         )
+
+    def preprocess_state(self, input_shape: tuple[int], state: np.ndarray):
+        gray = cv2.cvtColor(state, cv2.COLOR_RGB2GRAY)
+        resized = cv2.resize(
+            gray, (input_shape[1], input_shape[0]), interpolation=cv2.INTER_AREA)
+        processed = np.expand_dims(resized, axis=-1)
+        return processed.astype(np.float32)
 
     def build_q_network(self, input_shape, num_actions):
         return tf.keras.Sequential([
@@ -169,5 +178,6 @@ class MLService:
             float: The updated value of epsilon.
         """
         return max(E_MIN, E_DECAY * epsilon) if decrease else min(E_MAX, E_GROW * epsilon)
+
 
 ml_service = MLService()

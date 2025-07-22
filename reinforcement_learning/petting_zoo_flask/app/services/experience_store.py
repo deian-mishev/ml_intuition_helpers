@@ -1,11 +1,35 @@
+from concurrent.futures import ThreadPoolExecutor
+import asyncio
 from pymongo import ASCENDING
 from app.config.persistance_config import experiences_collection
 from app.config.session_state import Experience
 from datetime import datetime, timezone
+from app import app
+
 
 class ExperienceService:
     def __init__(self):
         self.collection = experiences_collection
+
+    def insert_experience_batch(self, env_name: str, experiences: list[Experience], sid):
+        if not experiences:
+            return
+        try:
+            docs = [{
+                "env_name": env_name,
+                "state": exp.state.tolist(),
+                "action": int(exp.action),
+                "reward": float(exp.reward),
+                "next_state": exp.next_state.tolist(),
+                "done": bool(exp.done),
+                "timestamp": datetime.now(timezone.utc)
+            } for exp in experiences]
+            self.collection.insert_many(docs)
+            self.enforce_limit(env_name)
+            app.logger.info(
+                f"{sid}: Stored {len(experiences)} experiences for {env_name}")
+        except Exception as e:
+            app.logger.exception(f"{sid}: Failed to store experiences: {e}")
 
     def insert_experience(self, env_name: str, experience: Experience):
         if not experience:
@@ -20,20 +44,17 @@ class ExperienceService:
             "timestamp": datetime.now(timezone.utc)
         }
         self.collection.insert_one(doc)
-        self.enforce_limit(env_name)
 
     def enforce_limit(self, env_name: str, max_entries: int = 10_000):
-        count = self.collection.count_documents({"env_name": env_name})
-        if count > max_entries:
-            excess = count - max_entries
-            old_docs_cursor = self.collection.find(
-                {"env_name": env_name},
-                sort=[("timestamp", ASCENDING)],
-                projection={"_id": 1},
-                limit=excess
-            )
-            old_docs = list(old_docs_cursor)
-            ids_to_delete = [doc["_id"] for doc in old_docs]
+        pipeline = [
+            {"$match": {"env_name": env_name}},
+            {"$sort": {"timestamp": ASCENDING}},
+            {"$skip": max_entries},
+            {"$project": {"_id": 1}}
+        ]
+        docs_to_delete = list(self.collection.aggregate(pipeline))
+        if docs_to_delete:
+            ids_to_delete = [doc["_id"] for doc in docs_to_delete]
             self.collection.delete_many({"_id": {"$in": ids_to_delete}})
 
     def sample_experiences(self, env_name: str, batch_size: int) -> list[Experience]:
@@ -41,12 +62,15 @@ class ExperienceService:
             {"$match": {"env_name": env_name}},
             {"$sample": {"size": batch_size}}
         ])
-        return [Experience(
-            state=doc["state"],
-            action=doc["action"],
-            reward=doc["reward"],
-            next_state=doc["next_state"],
-            done=doc["done"]
-        ) for doc in cursor]
+        experiences = []
+        for doc in cursor:
+            experiences.append(Experience(
+                state=doc["state"],
+                action=doc["action"],
+                reward=doc["reward"],
+                next_state=doc["next_state"],
+                done=doc["done"]
+            ))
+        return experiences
 
 experience_service = ExperienceService()

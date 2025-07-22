@@ -5,7 +5,7 @@ from app import app
 from app.config.session_state import SessionState, Experience
 from app.services.rendering_service import render_frame
 from app.services.ml_service import ml_service
-from app.config.env_config import HUMAN_AGENT_NAME, INPUT_TIMEOUT, EPSILON
+from app.config.env_config import HUMAN_AGENT_NAME, INPUT_TIMEOUT, EPSILON, MEMORY_SIZE
 from app.services.experience_store import experience_service
 
 class SessionRunner:
@@ -32,22 +32,18 @@ class SessionRunner:
             try:
                 obs, reward, terminated, truncated, info = self.session.env.last()
                 done = terminated or truncated
-
-                if self.session.current_agent == HUMAN_AGENT_NAME:
-                    self.session.nemesis_total_reward += reward
-                    with self.session.lock:
+                
+                with self.session.lock:
+                    obs = ml_service.preprocess_state(self.session.env_config.observation_space, obs)
+                    if self.session.current_agent == HUMAN_AGENT_NAME:
+                        self.session.nemesis_total_reward += reward
                         action = self.session.current_action
-                else:
-                    with self.session.lock:
+                    else:
                         q_values = self.session.q_network(tf.expand_dims(self.session.state, 0))
-                    action = ml_service.get_action(q_values, EPSILON, self.session.env_config.num_actions)
-
-                experience_service.insert_experience(
-                    env_name=self.session.env_config.name,
-                    experience=Experience(
-                        self.session.state, action, reward, obs,
-                        done)
-                )
+                        action = ml_service.get_action(q_values, EPSILON, self.session.env_config.num_actions)
+                    self.session.memory_buffer.append(Experience(
+                        self.session.state, action, reward, obs, done))
+                    self.session.state = obs
 
                 if done:
                     self.session.env.reset()
@@ -57,11 +53,12 @@ class SessionRunner:
                     break
 
                 self.session.env.step(action)
-                self.session.current_agent = next(self.session.agent_iter)
+                with self.session.lock:
+                    self.session.current_agent = next(self.session.agent_iter)
 
                 frame = render_frame(self.session)
                 self.socketio.emit('frame', frame, room=self.sid)
-                self.session.state = obs
+               
             except Exception as e:
                 app.logger.error(f"{self.sid}: Error emitting frame: {e}")
 
