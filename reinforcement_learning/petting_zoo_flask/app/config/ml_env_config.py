@@ -72,7 +72,8 @@ ENVIRONMENTS = {
         env=lambda render_mode="rgb_array": wizard_of_wor_v3.env(
             render_mode=render_mode),
         num_actions=9,
-        observation_space=(210, 160, 3)
+        observation_space=(52, 40, 1)
+        # observation_space=(210, 160, 3)
     ),
     'Mario Bros': EnvironmentConfig(
         name='mario_bros_v3',

@@ -5,8 +5,7 @@ from app import app
 from app.config.session_state import SessionState, Experience
 from app.services.rendering_service import render_frame
 from app.services.ml_service import ml_service
-from app.config.env_config import HUMAN_AGENT_NAME, INPUT_TIMEOUT, EPSILON, MEMORY_SIZE
-from app.services.experience_store import experience_service
+from app.config.env_config import HUMAN_AGENT_NAME, INPUT_TIMEOUT, EPSILON
 
 class SessionRunner:
     def __init__(self, sid: str, session: SessionState, socketio: SocketIO):

@@ -49,6 +49,33 @@ class MLService:
             tf.keras.layers.Dense(num_actions)
         ])
 
+    def build_multi_head_q_network(input_shape, env_heads):
+        """
+        Builds a shared Q-network with multiple heads.
+
+        Args:
+            input_shape: (52, 40, 1)
+            dict like {"wizard_of_wor_v3": 9, "mario_bros_v3": 18}
+        Returns:
+            model: tf.keras.Model with multiple outputs for pro player
+        """
+        inputs = tf.keras.Input(shape=input_shape)
+
+        x = tf.keras.layers.Rescaling(1./255)(inputs)
+        x = tf.keras.layers.Conv2D(32, (8, 8), strides=4, activation='relu')(x)
+        x = tf.keras.layers.Conv2D(64, (4, 4), strides=2, activation='relu')(x)
+        x = tf.keras.layers.Conv2D(64, (3, 3), strides=1, activation='relu')(x)
+        x = tf.keras.layers.Flatten()(x)
+        shared = tf.keras.layers.Dense(512, activation='relu')(x)
+
+        outputs = {}
+        for env_name, num_actions in env_heads.items():
+            outputs[env_name] = tf.keras.layers.Dense(
+                num_actions, name=f"{env_name}_head")(shared)
+
+        model = tf.keras.Model(inputs=inputs, outputs=outputs)
+        return model
+
     def update_target_network(self, q_network, target_q_network):
         """
         Updates the weights of the target Q-Network using a soft update.
