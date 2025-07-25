@@ -1,6 +1,5 @@
 from datetime import datetime
 from pymongo import MongoClient, ASCENDING
-from app.config.session_state import Experience
 import os
 from dotenv import load_dotenv
 

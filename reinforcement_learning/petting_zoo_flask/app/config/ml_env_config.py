@@ -3,8 +3,7 @@ import eventlet
 from pettingzoo.atari import boxing_v2, space_invaders_v2, tennis_v3, double_dunk_v3, ice_hockey_v2, mario_bros_v3, pong_v3, wizard_of_wor_v3
 from dataclasses import dataclass, field
 from typing import Optional, Callable
-from app.config.env_config import EPSILON, ATARI_PRO
-from app import client_sessions_lock, client_sessions
+from app.config.env_config import EPSILON
 
 @dataclass
 class EnvironmentConfig:
@@ -13,18 +12,12 @@ class EnvironmentConfig:
     model_path: str
     weights_path: str
     num_actions: int
+    agents: list[str]
     observation_space: tuple[int, ...]
     epsilon: float = EPSILON
     env: Optional[Callable] = field(default=None)
-    lock: eventlet.semaphore.Semaphore = field(default_factory=eventlet.semaphore.Semaphore)
-
-def get_available_environments_nemesis():
-    with client_sessions_lock:
-        active_env_names = {
-            next(name for name, cfg in ENVIRONMENTS.items() if cfg == session.env_config)
-            for session in client_sessions.values()
-        }
-    return [env for env in ENVIRONMENTS.keys() if env not in active_env_names], ["regular"]
+    lock: eventlet.semaphore.Semaphore = field(
+        default_factory=eventlet.semaphore.Semaphore)
 
 ENVIRONMENTS = {
     'Boxing': EnvironmentConfig(
@@ -39,6 +32,7 @@ ENVIRONMENTS = {
         env=lambda render_mode="rgb_array": boxing_v2.env(
             render_mode=render_mode),
         num_actions=18,
+        agents=['first_0', 'second_0'],
         observation_space=(52, 40, 1)
         # observation_space=(210, 160, 3)
     ),
@@ -57,6 +51,7 @@ ENVIRONMENTS = {
         env=lambda render_mode="rgb_array": tennis_v3.env(
             render_mode=render_mode),
         num_actions=18,
+        agents=['first_0', 'second_0'],
         observation_space=(52, 40, 1)
         # observation_space=(210, 160, 3)
     ),
@@ -72,6 +67,7 @@ ENVIRONMENTS = {
         env=lambda render_mode="rgb_array": wizard_of_wor_v3.env(
             render_mode=render_mode),
         num_actions=9,
+        agents=['first_0', 'second_0'],
         observation_space=(52, 40, 1)
         # observation_space=(210, 160, 3)
     ),
@@ -90,6 +86,7 @@ ENVIRONMENTS = {
         env=lambda render_mode="rgb_array": mario_bros_v3.env(
             render_mode=render_mode),
         num_actions=18,
+        agents=['first_0', 'second_0'],
         observation_space=(52, 40, 1)
         # observation_space=(210, 160, 3)
     ),
@@ -108,6 +105,7 @@ ENVIRONMENTS = {
         env=lambda render_mode="rgb_array": ice_hockey_v2.env(
             render_mode=render_mode),
         num_actions=18,
+        agents=['first_0', 'second_0'],
         observation_space=(52, 40, 1)
         # observation_space=(210, 160, 3)
     ),
@@ -126,6 +124,7 @@ ENVIRONMENTS = {
         env=lambda render_mode="rgb_array": double_dunk_v3.env(
             render_mode=render_mode),
         num_actions=18,
+        agents=['first_0', 'second_0'],
         observation_space=(52, 40, 1)
         # observation_space=(210, 160, 3)
     ),
@@ -139,6 +138,7 @@ ENVIRONMENTS = {
         env=lambda render_mode="rgb_array": pong_v3.env(
             render_mode=render_mode),
         num_actions=6,
+        agents=['first_0', 'second_0'],
         observation_space=(52, 40, 1)
         # observation_space=(210, 160, 3)
     ),
@@ -152,6 +152,7 @@ ENVIRONMENTS = {
         env=lambda render_mode="rgb_array": space_invaders_v2.env(
             render_mode=render_mode),
         num_actions=6,
+        agents=['first_0', 'second_0'],
         observation_space=(52, 40, 1)
         # observation_space=(210, 160, 3)
     )

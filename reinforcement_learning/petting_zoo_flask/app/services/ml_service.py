@@ -1,7 +1,8 @@
 
+from dataclasses import astuple
 import cv2
 from app.config.env_config import *
-from app.config.session_state import SessionState
+from app.config.session_state import PlayerState, SessionState
 
 import random
 import numpy as np
@@ -17,11 +18,11 @@ class MLService:
     def __init__(self):
         pass
 
-    def train_step(self, session: SessionState):
-        if len(session.memory_buffer) < MINIBATCH_SIZE:
+    def train_step(self, session: SessionState, winning_agent: PlayerState ):
+        if len(winning_agent.memory_buffer) < MINIBATCH_SIZE:
             return
         experiences = self.get_experiences(
-            session.memory_buffer, MINIBATCH_SIZE)
+            winning_agent.memory_buffer, MINIBATCH_SIZE)
         self.agent_learn(
             experiences,
             GAMMA,
@@ -177,7 +178,8 @@ class MLService:
 
     def get_experiences(self, memory_buffer, k):
         experiences = random.sample(memory_buffer, k)
-        states, actions, rewards, next_states, dones = zip(*experiences)
+        tuples = [astuple(exp) for exp in experiences]
+        states, actions, rewards, next_states, dones = zip(*tuples)
 
         states = np.stack(states).astype(np.float32)
         next_states = np.stack(next_states).astype(np.float32)

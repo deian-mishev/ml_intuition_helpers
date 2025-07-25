@@ -103,15 +103,14 @@
         <label for="envSelect">Environment:</label>
         <select id="envSelect"></select>
 
-        <label for="playerSelect">AI Player:</label>
-        <select id="playerSelect"></select>
+        <div id="player-config"></div>
 
         <button id="startBtn" disabled>Start</button>
     </div>
 
     <img id="video" width="{{ width }}" height="{{ height }}" />
 
-    <script src="{{ url_for('static', filename='js/agent-client-new.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/agent-client.js') }}"></script>
 </body>
 
 </html>
