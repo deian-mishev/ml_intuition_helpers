@@ -3,6 +3,6 @@
 *.ini
 *.keras
 *.h5
-launch.json
+.vscode/*
 .env
 *.log

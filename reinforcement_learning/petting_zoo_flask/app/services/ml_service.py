@@ -1,6 +1,7 @@
 
 from dataclasses import astuple
 import cv2
+from app import app
 from app.config.env_config import *
 from app.config.session_state import PlayerState, SessionState
 
@@ -208,5 +209,36 @@ class MLService:
         """
         return max(E_MIN, E_DECAY * epsilon) if decrease else min(E_MAX, E_GROW * epsilon)
 
+
+    def load_model(self, sid, env_config, session_state, obs_shape, num_actions):
+        if os.path.exists(env_config.model_path) and os.path.exists(env_config.weights_path):
+            app.logger.info(
+                f"{sid}: Loading existing models ${env_config.model_path}")
+            session_state.q_network = tf.keras.models.load_model(
+                env_config.model_path)
+            session_state.target_q_network = ml_service.build_q_network(
+                obs_shape, num_actions)
+            session_state.target_q_network.load_weights(
+                session_state.env_config.weights_path)
+            session_state.optimizer = session_state.q_network.optimizer
+        else:
+            app.logger.info(f"{sid}: Initializing new models...")
+            session_state.q_network = ml_service.build_q_network(
+                obs_shape, num_actions)
+            session_state.target_q_network = ml_service.build_q_network(
+                obs_shape, num_actions)
+            session_state.optimizer = tf.keras.optimizers.Adam(
+                learning_rate=ALPHA)
+            dummy_input = tf.zeros((1, *obs_shape), dtype=tf.float32)
+            _ = session_state.q_network(dummy_input)
+            _ = session_state.target_q_network(dummy_input)
+            session_state.target_q_network.set_weights(
+                session_state.q_network.get_weights())
+            session_state.q_network.compile(
+                optimizer=session_state.optimizer, loss='mse')
+        zero_grads = [tf.zeros_like(
+            v) for v in session_state.q_network.trainable_variables]
+        session_state.optimizer.apply_gradients(
+            zip(zero_grads, session_state.q_network.trainable_variables))
 
 ml_service = MLService()
