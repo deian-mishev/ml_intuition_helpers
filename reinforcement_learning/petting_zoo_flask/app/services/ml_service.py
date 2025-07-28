@@ -19,7 +19,21 @@ class MLService:
     def __init__(self):
         pass
 
-    def train_step(self, session: SessionState, winning_agent: PlayerState ):
+    def train_model(self, sid, session: SessionState):
+        with session.env_config.lock:
+            for agent_name, agent_state in session.agents.items():
+                app.logger.info(
+                    f"{sid}: Teaching model, for {agent_name.capitalize()} with score: {agent_state.total_reward}")
+                for _ in range(10):
+                    ml_service.train_step(session, agent_state)
+
+            session.env_config.epsilon = ml_service.get_new_eps(
+                session.env_config.epsilon)
+            session.q_network.save(session.env_config.model_path)
+            session.target_q_network.save_weights(
+                session.env_config.weights_path)
+
+    def train_step(self, session: SessionState, winning_agent: PlayerState):
         if len(winning_agent.memory_buffer) < MINIBATCH_SIZE:
             return
         experiences = self.get_experiences(
@@ -209,7 +223,6 @@ class MLService:
         """
         return max(E_MIN, E_DECAY * epsilon) if decrease else min(E_MAX, E_GROW * epsilon)
 
-
     def load_model(self, sid, env_config, session_state, obs_shape, num_actions):
         if os.path.exists(env_config.model_path) and os.path.exists(env_config.weights_path):
             app.logger.info(
@@ -240,5 +253,6 @@ class MLService:
             v) for v in session_state.q_network.trainable_variables]
         session_state.optimizer.apply_gradients(
             zip(zero_grads, session_state.q_network.trainable_variables))
+
 
 ml_service = MLService()

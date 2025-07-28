@@ -41,7 +41,8 @@ class SessionRunner:
                 if human_action:
                     action = self.session.next_human_action
                 else:
-                    q_values = self.session.q_network(tf.expand_dims(old_obs, 0))
+                    q_values = self.session.q_network(
+                        tf.expand_dims(old_obs, 0))
                     action = ml_service.get_action(
                         q_values, EPSILON, self.session.env_config.num_actions)
 
@@ -55,11 +56,13 @@ class SessionRunner:
 
                     if done:
                         self.end_episode(old_obs)
-                        self.socketio.emit('episode_end', {'message': 'Episode ended'}, room=self.sid)
+                        self.socketio.emit(
+                            'episode_end', {'message': 'Episode ended'}, room=self.sid)
                         return
 
                     self.session.env.step(action)
-                    self.session.current_agent = self.session.agents[next(self.session.agent_iter)]
+                    self.session.current_agent = self.session.agents[next(
+                        self.session.agent_iter)]
 
                 frame = render_frame(self.session)
                 self.socketio.emit('frame', frame, room=self.sid)
@@ -73,15 +76,17 @@ class SessionRunner:
         if self._running_greenlet and not self._running_greenlet.dead:
             app.logger.info(f"{self.sid}: Training is already running.")
             return
-        self._running_greenlet = eventlet.spawn(self._run_training, max_episodes)
-            
+        self._running_greenlet = eventlet.spawn(
+            self._run_training, max_episodes)
+
     def _run_training(self, max_episodes: int = 1):
         for episode in range(max_episodes):
             if self._should_stop():
                 break
             self.session.env.reset()
             self.session.agent_iter = iter(self.session.env.agent_iter())
-            self.session.current_agent = self.session.agents[next(self.session.agent_iter)]
+            self.session.current_agent = self.session.agents[next(
+                self.session.agent_iter)]
             done = False
             steps = 1
             while not done and not self._should_stop():
@@ -90,8 +95,10 @@ class SessionRunner:
                     agent_in_turn.total_reward += reward
                     reward = self.augment_reward(reward)
 
-                    q_values = self.session.q_network(tf.expand_dims(obeservation, 0))
-                    action = ml_service.get_action(q_values, EPSILON, self.session.env_config.num_actions)
+                    q_values = self.session.q_network(
+                        tf.expand_dims(obeservation, 0))
+                    action = ml_service.get_action(
+                        q_values, EPSILON, self.session.env_config.num_actions)
 
                     agent_in_turn.current_experience = Experience(
                         state=obeservation,
@@ -99,21 +106,25 @@ class SessionRunner:
                         reward=reward,
                         done=done
                     )
-                    
+
                     if done:
                         self.end_episode(obeservation)
+                        ml_service.train_model(self.sid, self.session)
                         break
 
                     self.session.env.step(action)
-                    self.session.current_agent = self.session.agents[next(self.session.agent_iter)]
+                    self.session.current_agent = self.session.agents[next(
+                        self.session.agent_iter)]
                     if steps % 2000 == 0:
-                        app.logger.info(f"{self.sid}: Training for episode {episode} still in session...")
+                        app.logger.info(
+                            f"{self.sid}: Training for episode {episode + 1} still in session...")
                     steps += 1
                     eventlet.sleep(0)
                 except Exception as e:
                     app.logger.error(f"{self.sid}: Error in game loop: {e}")
-            
-            app.logger.info(f"{self.sid}: Episode {episode + 1}/{max_episodes} completed.")
+
+            app.logger.info(
+                f"{self.sid}: Episode {episode + 1}/{max_episodes} completed.")
         cleanup_session(self.sid, False)
 
     def end_episode(self, last_observation):
@@ -125,21 +136,24 @@ class SessionRunner:
 
         self.session.env.reset()
         self.session.agent_iter = iter(self.session.env.agent_iter())
-        self.session.current_agent = self.session.agents[next(self.session.agent_iter)]
+        self.session.current_agent = self.session.agents[next(
+            self.session.agent_iter)]
 
     def set_agent_in_turn_and_current_experience(self):
         agent_in_turn = self.session.current_agent
         obs, reward, terminated, truncated, _ = self.session.env.last()
         done = terminated or truncated
 
-        obs = ml_service.preprocess_state(self.session.env_config.observation_space, obs)
+        obs = ml_service.preprocess_state(
+            self.session.env_config.observation_space, obs)
 
         if agent_in_turn.current_experience is not None:
             agent_in_turn.current_experience.next_state = obs
-            agent_in_turn.memory_buffer.append(agent_in_turn.current_experience)
+            agent_in_turn.memory_buffer.append(
+                agent_in_turn.current_experience)
 
         return agent_in_turn, done, reward, obs
-    
+
     def augment_reward(self, reward):
         if reward > 0:
             return reward * REWARD_POS_FACTOR
