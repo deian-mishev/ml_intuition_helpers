@@ -27,5 +27,5 @@ REWARD_NEG_FACTO = 3      # negative reward multiplication factor
 
 INPUT_TIMEOUT = 0.01
 
-ATARI_PRO = "./models/keras/atari_pro.keras"
-ATARI_PRO_WEIGHTS = "./models/keras/atari_pro_weights.weights.h5"
+ATARI_PRO = "./resources/models/keras/atari_pro.keras"
+ATARI_PRO_WEIGHTS = "./resources/models/keras/atari_pro_weights.weights.h5"

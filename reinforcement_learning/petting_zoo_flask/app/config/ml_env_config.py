@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from typing import Optional, Callable
 from app.config.env_config import EPSILON
 
+
 @dataclass
 class EnvironmentConfig:
     name: str
@@ -18,6 +19,7 @@ class EnvironmentConfig:
     env: Optional[Callable] = field(default=None)
     lock: eventlet.semaphore.Semaphore = field(
         default_factory=eventlet.semaphore.Semaphore)
+
 
 ENVIRONMENTS = {
     'Boxing': EnvironmentConfig(
@@ -44,7 +46,7 @@ ENVIRONMENTS = {
             "3": 8, "1": 9, "w": 10,
             "d": 11, "a": 12, "x": 13,
             "e": 14, "q": 15, "c": 16,
-            "z": 17, "s": 1
+            "z": 17, "s": 1, "0": 0
         },
         model_path="./resources/models/keras/tennis_v3.keras",
         weights_path="./resources/models/keras/tennis_v3_weights.weights.h5",
@@ -79,7 +81,7 @@ ENVIRONMENTS = {
             "3": 8, "1": 9, "w": 10,
             "d": 11, "a": 12, "x": 13,
             "e": 14, "q": 15, "c": 16,
-            "z": 17, "s": 1
+            "z": 17, "s": 1, "0": 0
         },
         model_path="./resources/models/keras/mario_bros_v3.keras",
         weights_path="./resources/models/keras/mario_bros_v3_weights.weights.h5",
@@ -98,7 +100,7 @@ ENVIRONMENTS = {
             "3": 8, "1": 9, "w": 10,
             "d": 11, "a": 12, "x": 13,
             "e": 14, "q": 15, "c": 16,
-            "z": 17, "s": 1
+            "z": 17, "s": 1, "0": 0
         },
         model_path="./resources/models/keras/ice_hockey_v2.keras",
         weights_path="./resources/models/keras/ice_hockey_v2_weights.weights.h5",
@@ -117,7 +119,7 @@ ENVIRONMENTS = {
             "3": 8, "1": 9, "w": 10,
             "d": 11, "a": 12, "x": 13,
             "e": 14, "q": 15, "c": 16,
-            "z": 17, "s": 1
+            "z": 17, "s": 1, "0": 0
         },
         model_path="./resources/models/keras/double_dunk_v3.keras",
         weights_path="./resources/models/keras/double_dunk_v3_weights.weights.h5",
@@ -131,7 +133,7 @@ ENVIRONMENTS = {
     'Pong': EnvironmentConfig(
         name='pong_v3_model',
         KEY_MAP={
-            "4": 3, "6": 2, "s": 1
+            "4": 3, "6": 2, "s": 1, "0": 0
         },
         model_path="./resources/models/keras/pong_v3_model.keras",
         weights_path="./resources/models/keras/pong_v3_weights.weights.h5",
@@ -145,7 +147,7 @@ ENVIRONMENTS = {
     "Space Invaders": EnvironmentConfig(
         name='space_invaders_v2',
         KEY_MAP={
-            "8": 2, "6": 4, "4": 3, "2": 5, "s": 1
+            "8": 2, "6": 4, "4": 3, "2": 5, "s": 1,  "0": 0
         },
         model_path="./resources/models/keras/space_invaders_v2.keras",
         weights_path="./resources/models/keras/space_invaders_v2_weights.weights.h5",

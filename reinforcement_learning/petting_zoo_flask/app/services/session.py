@@ -34,6 +34,11 @@ def cleanup_session(sid, from_field: bool = True):
         except Exception as e:
             app.logger.error(f"{sid}: Error updating model for session: {e}")
 
-
 def get_available_environments_and_nemesis():
-    return [{"name": name, "agents": cfg.agents} for name, cfg in ENVIRONMENTS.items()], [pt.value for pt in PlayerType]
+    with client_sessions_lock:
+        available_envs = [
+            {"name": name, "agents": cfg.agents}
+            for name, cfg in ENVIRONMENTS.items()
+            if not any(session.env_config.name == cfg.name for session in client_sessions.values())
+        ]
+    return available_envs, [pt.value for pt in PlayerType]

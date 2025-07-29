@@ -1,7 +1,6 @@
 from app.config.session_state import SessionState
 import base64
 import cv2
-import numpy as np
 
 def render_frame(session: SessionState) -> str:
     with session.lock:

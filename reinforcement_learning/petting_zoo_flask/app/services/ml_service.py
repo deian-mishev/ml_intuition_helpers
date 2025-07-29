@@ -33,11 +33,11 @@ class MLService:
             session.target_q_network.save_weights(
                 session.env_config.weights_path)
 
-    def train_step(self, session: SessionState, winning_agent: PlayerState):
-        if len(winning_agent.memory_buffer) < MINIBATCH_SIZE:
+    def train_step(self, session: SessionState, current_agent: PlayerState):
+        if len(current_agent.memory_buffer) < MINIBATCH_SIZE:
             return
         experiences = self.get_experiences(
-            winning_agent.memory_buffer, MINIBATCH_SIZE)
+            current_agent.memory_buffer, MINIBATCH_SIZE)
         self.agent_learn(
             experiences,
             GAMMA,
@@ -117,7 +117,7 @@ class MLService:
                                   (1.0 - TAU) * target_weights)
 
     @tf.function
-    def compute_loss_discreate(self, experiences, gamma, q_network, target_q_network):
+    def compute_loss_discreate(self, experiences, gamma, q_network, target_q_network, env_name=False):
         """ 
         Calculates the loss.
 
@@ -126,6 +126,7 @@ class MLService:
         gamma: (float) The discount factor.
         q_network: (tf.keras.Sequential) Keras model for predicting the q_values
         target_q_network: (tf.keras.Sequential) Keras model for predicting the targets
+        env_name: str, which head to use if any and the model multihead
 
         Returns:
         loss: (TensorFlow Tensor(shape=(0,), dtype=int32)) the Mean-Squared Error between
@@ -135,14 +136,22 @@ class MLService:
         states, actions, rewards, next_states, done_vals = experiences
 
         # Get max Q-values from target network for next states
-        max_qsa = tf.reduce_max(target_q_network(next_states), axis=1)
+        if env_name:
+            next_q_values = target_q_network(next_states)[env_name]
+        else:
+            next_q_values = target_q_network(next_states)
+
+        max_qsa = tf.reduce_max(next_q_values, axis=1)
 
         # Compute target values: y = r + (1 - done) * gamma * max Q'(s', a')
         y_targets = rewards + (1.0 - done_vals) * gamma * max_qsa
         y_targets = tf.stop_gradient(y_targets)
 
         # Predict Q-values from current q_network
-        q_values_all = q_network(states)
+        if env_name:
+            q_values_all = q_network(states)[env_name]
+        else:
+            q_values_all = q_network(states)
 
         # Get Q-values for the actions actually taken
         batch_size = tf.shape(actions)[0]
@@ -155,17 +164,22 @@ class MLService:
         return loss
 
     @tf.function(jit_compile=True)
-    def agent_learn(self, experiences, gamma, target_q_network, optimizer, q_network):
+    def agent_learn(self, experiences, gamma,
+                    target_q_network, optimizer, q_network,
+                    env_name = False):
         """
         Updates the weights of the Q networks.
 
         Args:
         experiences: (tuple) tuple of ["state", "action", "reward", "next_state", "done"] namedtuples
         gamma: (float) The discount factor.
+        q_network: (tf.keras.Sequential) Keras model for predicting the q_values
+        target_q_network: (tf.keras.Sequential) Keras model for predicting the targets
+        env_name: str, which head to use if any and the model multihead
         """
         with tf.GradientTape() as tape:
             loss = self.compute_loss_discreate(
-                experiences, gamma, q_network, target_q_network)
+                experiences, gamma, q_network, target_q_network, env_name)
         gradients = tape.gradient(loss, q_network.trainable_variables)
         optimizer.apply_gradients(
             zip(gradients, q_network.trainable_variables))

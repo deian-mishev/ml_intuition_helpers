@@ -20,7 +20,8 @@ class Experience:
     done: bool = None
 
 class PlayerType(str, Enum):
-    COMPUTER = "computer"
+    COMPUTER = "computer_regular",
+    ATARI_PRO = "atari_pro",
     HUMAN = "human"
   
 @dataclass
