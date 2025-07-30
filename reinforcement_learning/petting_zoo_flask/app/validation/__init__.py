@@ -1,5 +1,5 @@
 from app.config.ml_env_config import ENVIRONMENTS
-from app.config.session_state import PlayerType
+from app.config.player_state import PlayerType
 
 
 def validate_env(env_name):
@@ -23,7 +23,7 @@ def validate_players(players):
     return True, players
 
 
-def validate_env_players_comb(env_name, allowed_types, players, human_player=PlayerType.HUMAN.value):
+def validate_env_players_comb(env_name, allowed_types, players):
     valid, players_val_response = validate_players(players)
 
     if not valid:
@@ -38,13 +38,14 @@ def validate_env_players_comb(env_name, allowed_types, players, human_player=Pla
         return False, "Player count mismatch"
 
     human_seen = False
+    atari_pro_seen = False
     for agent in env_cfg.agents:
         if agent not in players_val_response:
             return False, f"Missing agent: {agent}"
         agent_type = players_val_response[agent]
         if agent_type not in allowed_types:
             return False, f"Invalid type for {agent}: {agent_type}"
-        if agent_type == human_player:
+        if agent_type == PlayerType.HUMAN:
             if human_seen:
                 return False, "More than one human player not supported atm"
             human_seen = True

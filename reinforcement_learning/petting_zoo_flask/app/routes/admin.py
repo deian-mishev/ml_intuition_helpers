@@ -3,11 +3,13 @@ from flask import jsonify, request
 from app import app, client_sessions, client_sessions_lock
 from app.services.ml_service import ml_service
 from app.services.session_runner import SessionRunner
-from app.config.session_state import PlayerState, PlayerType, SessionState
+from app.config.session_state import SessionState
 from app.config.ml_env_config import EnvironmentConfig, ENVIRONMENTS
 from app.config.env_config import *
-from app.config.oauth2_config import token_required_api, roles_required
+from app.config.oauth2_config import token_required_api
 from app.validation import validate_env, validate_players
+from app.config.player_state import PlayerType
+from app.services.session import populate_session_agents
 
 
 @app.route('/train', methods=['POST'])
@@ -17,13 +19,13 @@ def train():
     with client_sessions_lock:
         if sid in client_sessions:
             return jsonify({"error": "Training session in progress"}), 400
-        
+
     user = request.user['email']
     data = request.get_json()
     env_name = data.get("env")
     players = data.get("players")
     episodes = data.get("episodes", 1)
-    
+
     valid, players = validate_players(players)
     if not valid:
         return jsonify({"error": players}), 400
@@ -45,17 +47,12 @@ def train():
     current_agent = next(agent_iter)
     num_actions = env_config.num_actions
     obs_shape = env_config.observation_space
-
-
     session_state: SessionState = SessionState(
         env_config=env_config,
-        env=env,
-        agents={key: PlayerState(
-            type=PlayerType(value))
-            for key, value in players.items()}
+        env=env
     )
-
-    ml_service.load_model(sid, env_config, session_state,
+    populate_session_agents(session_state, env_config, players)
+    ml_service.load_model(sid, session_state,
                           obs_shape, num_actions)
     session_state.agent_iter = agent_iter
     session_state.current_agent = session_state.agents[current_agent]
@@ -73,7 +70,7 @@ def train():
 def stop_training():
     sid = request.user['sub']
     with client_sessions_lock:
-        session = client_sessions.get(sid, None) 
+        session = client_sessions.get(sid, None)
 
     if not session:
         return {"success": False, "message": "No training session found"}, 404

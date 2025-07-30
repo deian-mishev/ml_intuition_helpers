@@ -1,6 +1,6 @@
 from pymongo import ASCENDING
 from app.config.persistance_config import experiences_collection
-from app.config.session_state import Experience
+from app.config.player_state import Experience
 from datetime import datetime, timezone
 from app import app
 

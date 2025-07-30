@@ -4,13 +4,12 @@ from flask import request, jsonify, session, render_template
 from app import app, socketio, client_sessions, client_sessions_lock
 from app.services.ml_service import ml_service
 from app.services.session_runner import SessionRunner
-from app.config.session_state import PlayerState, PlayerType, SessionState
+from app.config.session_state import SessionState
 from app.config.ml_env_config import EnvironmentConfig, ENVIRONMENTS
 from app.config.env_config import *
 from app.config.oauth2_config import login_required, roles_required
 from app.validation import validate_env_players_comb
-from app.services.session import cleanup_session, get_available_environments_and_nemesis
-
+from app.services.session import cleanup_session, get_available_environments_and_nemesis, populate_session_agents
 
 @app.route('/preconnect', methods=['GET'])
 @login_required
@@ -57,15 +56,12 @@ def on_connect():
 
     session_state: SessionState = SessionState(
         env_config=env_config,
-        env=env,
-        agents={key: PlayerState(
-            type=PlayerType(value))
-            for key, value in players.items()}
+        env=env
     )
 
-    ml_service.load_model(sid, env_config, session_state,
+    populate_session_agents(session_state, env_config, players)
+    ml_service.load_model(sid, session_state,
                           obs_shape, num_actions)
-
     session_state.agent_iter = agent_iter
     session_state.current_agent = session_state.agents[current_agent]
 

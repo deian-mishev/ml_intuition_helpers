@@ -18,7 +18,7 @@ class EnvironmentConfig:
     env: Optional[Callable] = field(default=None)
     lock: eventlet.semaphore.Semaphore = field(
         default_factory=eventlet.semaphore.Semaphore)
-
+    
 ENVIRONMENTS = {
     'Boxing': EnvironmentConfig(
         name='boxing_v2',
@@ -157,3 +157,5 @@ ENVIRONMENTS = {
         # observation_space=(210, 160, 3)
     )
 }
+
+ATTARI_PRO_MODEL_HEADS={cfg.name: cfg.num_actions for cfg in ENVIRONMENTS.values()}

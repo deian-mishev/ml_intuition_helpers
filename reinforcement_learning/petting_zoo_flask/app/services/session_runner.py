@@ -2,11 +2,12 @@ import eventlet
 import tensorflow as tf
 from flask_socketio import SocketIO
 from app import app
-from app.config.session_state import PlayerType, SessionState, Experience
+from app.config.session_state import SessionState
 from app.services.rendering_service import render_frame
 from app.services.ml_service import ml_service
-from app.config.env_config import INACTIVITY_TO, INPUT_TIMEOUT, EPSILON, REWARD_NEG_FACTO, REWARD_POS_FACTOR
+from app.config.env_config import INACTIVITY_TO, INPUT_TIMEOUT, REWARD_NEG_FACTO, REWARD_POS_FACTOR
 from app.services.session import cleanup_session
+from app.config.player_state import Experience, PlayerType
 
 class SessionRunner:
     def __init__(self, sid: str, session: SessionState, socketio: SocketIO):
@@ -41,8 +42,10 @@ class SessionRunner:
                 else:
                     q_values = agent_in_turn.q_network(
                         tf.expand_dims(observation, 0))
+                    if agent_in_turn.type == PlayerType.ATARI_PRO:
+                        q_values = q_values[self.session.env_config.name]
                     action = ml_service.get_action(
-                        q_values, EPSILON, self.session.env_config.num_actions)
+                        q_values, self.session.env_config.epsilon, self.session.env_config.num_actions)
 
                 agent_in_turn.current_experience = Experience(
                     state=observation,
@@ -93,8 +96,10 @@ class SessionRunner:
 
                     q_values = agent_in_turn.q_network(
                         tf.expand_dims(observation, 0))
+                    if agent_in_turn.type == PlayerType.ATARI_PRO:
+                        q_values = q_values[self.session.env_config.name]
                     action = ml_service.get_action(
-                        q_values, EPSILON, self.session.env_config.num_actions)
+                        q_values, self.session.env_config.epsilon, self.session.env_config.num_actions)
 
                     agent_in_turn.current_experience = Experience(
                         state=observation,

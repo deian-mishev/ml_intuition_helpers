@@ -1,8 +1,10 @@
 from app import app, client_sessions, client_sessions_lock
 from app.services.ml_service import ml_service
 from app.services.experience_store import experience_service
-from app.config.session_state import PlayerType
-from app.config.ml_env_config import ENVIRONMENTS
+from app.config.session_state import SessionState
+from app.config.ml_env_config import ENVIRONMENTS, EnvironmentConfig
+from app.config.env_config import ATTARI_PRO_LOCK, ATTARI_PRO_MODEL, ATTARI_PRO_WEIGHTS_PATH
+from app.config.player_state import PlayerState, PlayerType
 
 
 def cleanup_session(sid, from_field: bool = True):
@@ -53,6 +55,19 @@ def get_available_environments_and_nemesis():
         available_envs = [
             {"name": name, "agents": cfg.agents}
             for name, cfg in ENVIRONMENTS.items()
-            if name not in used_env_names
+            if cfg.name not in used_env_names
         ]
     return available_envs, available_players
+
+def populate_session_agents(session_state: SessionState, env_config: EnvironmentConfig, players: dict[str, str]):
+    for key, value in players.items():
+        player = PlayerState(type=PlayerType(value))
+        if player.type in [PlayerType.HUMAN, PlayerType.ATARI_PRO]:
+            player.lock = ATTARI_PRO_LOCK
+            player.model_path = ATTARI_PRO_MODEL
+            player.weights_path = ATTARI_PRO_WEIGHTS_PATH
+        else:
+            player.lock = env_config.lock
+            player.model_path = env_config.model_path
+            player.weights_path = env_config.weights_path
+        session_state.agents[key] = player
