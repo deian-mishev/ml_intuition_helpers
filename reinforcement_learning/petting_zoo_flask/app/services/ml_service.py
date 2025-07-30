@@ -1,9 +1,12 @@
 
-from dataclasses import astuple
-import cv2
+from dataclasses import astuple, dataclass, field
+from typing import Optional
+
+import eventlet
 from app import app
 from app.config.env_config import *
-from app.config.session_state import PlayerState, SessionState
+from app.config.ml_env_config import ENVIRONMENTS
+from app.config.session_state import PlayerState, SessionState, PlayerType
 
 import random
 import numpy as np
@@ -12,28 +15,44 @@ import tensorflow as tf
 random.seed(SEED)
 tf.random.set_seed(SEED)
 
-
 class MLService:
     _instance = None
-
+    
     def __init__(self):
-        pass
+        if self._initialized:
+            return
+        self._initialized = True
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+            cls._instance._initialized = False
+        return cls._instance
 
     def train_model(self, sid, session: SessionState):
         with session.env_config.lock:
+            agent_models: dict[PlayerType, dict[str, str]] = {}
             for agent_name, agent_state in session.agents.items():
                 app.logger.info(
-                    f"{sid}: Teaching model, for {agent_name.capitalize()} with score: {agent_state.total_reward}")
+                    f"{sid}: {agent_name}:{agent_state.type.value()} with score: {agent_state.total_reward}")
                 for _ in range(10):
-                    ml_service.train_step(session, agent_state)
-
+                    ml_service.train_step(agent_state)
+                
+                if agent_state.type not in agent_models.keys():
+                    match a
+                    agent_models[agent_state.type]
+            
+            if PlayerType.ATARI_PRO and PlayerType.HUMAN in agent_models:
+                agent_models.remove(PlayerType.HUMAN)
+          
+            for age
             session.env_config.epsilon = ml_service.get_new_eps(
                 session.env_config.epsilon)
             session.q_network.save(session.env_config.model_path)
             session.target_q_network.save_weights(
                 session.env_config.weights_path)
 
-    def train_step(self, session: SessionState, current_agent: PlayerState):
+    def train_step(self, current_agent: PlayerState):
         if len(current_agent.memory_buffer) < MINIBATCH_SIZE:
             return
         experiences = self.get_experiences(
@@ -41,9 +60,9 @@ class MLService:
         self.agent_learn(
             experiences,
             GAMMA,
-            session.target_q_network,
-            session.optimizer,
-            session.q_network,
+            current_agent.target_q_network,
+            current_agent.optimizer,
+            current_agent.q_network,
         )
 
     def preprocess_state(self, input_shape: tuple[int], state: np.ndarray):
@@ -237,36 +256,68 @@ class MLService:
         """
         return max(E_MIN, E_DECAY * epsilon) if decrease else min(E_MAX, E_GROW * epsilon)
 
-    def load_model(self, sid, env_config, session_state, obs_shape, num_actions):
-        if os.path.exists(env_config.model_path) and os.path.exists(env_config.weights_path):
+    def load_model(self, sid, player_state: PlayerState, obs_shape, num_actions):
+        if os.path.exists(player_state.model_path) and os.path.exists(player_state.weights_path):
             app.logger.info(
-                f"{sid}: Loading existing models ${env_config.model_path}")
-            session_state.q_network = tf.keras.models.load_model(
-                env_config.model_path)
-            session_state.target_q_network = ml_service.build_q_network(
-                obs_shape, num_actions)
-            session_state.target_q_network.load_weights(
-                session_state.env_config.weights_path)
-            session_state.optimizer = session_state.q_network.optimizer
+                f"{sid}: Loading existing models ${player_state.model_path}")
+            player_state.q_network = tf.keras.models.load_model(
+                player_state.model_path)
+            if player_state.type == PlayerType.ATARI_PRO:
+                player_state.target_q_network = ml_service.build_multi_head_q_network(
+                    obs_shape,
+                    env_heads={name: cfg.num_actions for name, cfg in ENVIRONMENTS.items()}
+                )
+            else:
+                player_state.target_q_network = ml_service.build_q_network(
+                    obs_shape, num_actions)
+            player_state.target_q_network.load_weights(
+                player_state.weights_path)
+            player_state.optimizer = player_state.q_network.optimizer
         else:
             app.logger.info(f"{sid}: Initializing new models...")
-            session_state.q_network = ml_service.build_q_network(
+            player_state.q_network = ml_service.build_q_network(
                 obs_shape, num_actions)
-            session_state.target_q_network = ml_service.build_q_network(
+            player_state.target_q_network = ml_service.build_q_network(
                 obs_shape, num_actions)
-            session_state.optimizer = tf.keras.optimizers.Adam(
+            player_state.optimizer = tf.keras.optimizers.Adam(
                 learning_rate=ALPHA)
             dummy_input = tf.zeros((1, *obs_shape), dtype=tf.float32)
-            _ = session_state.q_network(dummy_input)
-            _ = session_state.target_q_network(dummy_input)
-            session_state.target_q_network.set_weights(
-                session_state.q_network.get_weights())
-            session_state.q_network.compile(
-                optimizer=session_state.optimizer, loss='mse')
+            _ = player_state.q_network(dummy_input)
+            _ = player_state.target_q_network(dummy_input)
+            player_state.target_q_network.set_weights(
+                player_state.q_network.get_weights())
+            player_state.q_network.compile(
+                optimizer=player_state.optimizer, loss='mse')
         zero_grads = [tf.zeros_like(
-            v) for v in session_state.q_network.trainable_variables]
-        session_state.optimizer.apply_gradients(
-            zip(zero_grads, session_state.q_network.trainable_variables))
+            v) for v in player_state.q_network.trainable_variables]
+        player_state.optimizer.apply_gradients(
+            zip(zero_grads, player_state.q_network.trainable_variables))
 
 
 ml_service = MLService()
+
+@dataclass
+class AtariProModel:
+    _instance = None
+    
+    def __init__(self):
+        if self._initialized:
+            return
+        self.q_network = tf.keras.models.load_model(self.model_path)
+
+        self.target_q_network.load_weights(self.weights_path)
+        self.optimizer = self.q_network.optimizer
+        self._initialized = True
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+            cls._instance._initialized = False
+        return cls._instance
+    
+    q_network: Optional[tf.keras.Model] = None
+    target_q_network: Optional[tf.keras.Model] = None
+    optimizer: Optional[tf.keras.optimizers.Optimizer] = None
+    model_path: str = "./resources/models/keras/atari_pro.keras"
+    weights_path: str = "./resources/models/keras/atari_pro_weights.weights.h5"
+    lock: eventlet.semaphore.Semaphore = field(default_factory=eventlet.semaphore.Semaphore)

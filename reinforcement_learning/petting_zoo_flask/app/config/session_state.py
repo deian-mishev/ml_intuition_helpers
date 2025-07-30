@@ -27,20 +27,22 @@ class PlayerType(str, Enum):
 @dataclass
 class PlayerState:
     type: PlayerType = None
+    model_path: str = None
+    weights_path: str = None
     current_experience: Optional[Experience] = None
     total_reward: int = field(default=0)
     memory_buffer: Deque[Experience] = field(default_factory=lambda: deque(maxlen=MEMORY_SIZE))
+    q_network: Optional[tf.keras.Model] = None
+    target_q_network: Optional[tf.keras.Model] = None
+    optimizer: Optional[tf.keras.optimizers.Optimizer] = None
 
 @dataclass
 class SessionState:
     env: object
     env_config: EnvironmentConfig
     runner: Optional["SessionRunner"] = None
-    q_network: Optional[tf.keras.Model] = None
-    target_q_network: Optional[tf.keras.Model] = None
-    optimizer: Optional[tf.keras.optimizers.Optimizer] = None
     agent_iter: Optional[object] = None
     current_agent: Optional[PlayerState] = None
-    agents: Dict[str, PlayerState] = field(default_factory=dict)
     next_human_action: int = 0
+    agents: Dict[str, PlayerState] = field(default_factory=dict)
     lock: eventlet.semaphore.Semaphore = field(default_factory=eventlet.semaphore.Semaphore)

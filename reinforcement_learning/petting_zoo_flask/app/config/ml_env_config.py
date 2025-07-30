@@ -5,7 +5,6 @@ from dataclasses import dataclass, field
 from typing import Optional, Callable
 from app.config.env_config import EPSILON
 
-
 @dataclass
 class EnvironmentConfig:
     name: str
@@ -19,7 +18,6 @@ class EnvironmentConfig:
     env: Optional[Callable] = field(default=None)
     lock: eventlet.semaphore.Semaphore = field(
         default_factory=eventlet.semaphore.Semaphore)
-
 
 ENVIRONMENTS = {
     'Boxing': EnvironmentConfig(

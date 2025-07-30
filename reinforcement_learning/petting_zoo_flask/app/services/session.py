@@ -36,9 +36,23 @@ def cleanup_session(sid, from_field: bool = True):
 
 def get_available_environments_and_nemesis():
     with client_sessions_lock:
+        used_env_names = set()
+        available_players = [pt.value for pt in PlayerType]
+        atari_pro_removed = False
+        for session in client_sessions.values():
+            used_env_names.add(session.env_config.name)
+            if not atari_pro_removed:
+                for agent in session.agents.values():
+                    if agent.type == PlayerType.ATARI_PRO:
+                        available_players.remove(PlayerType.ATARI_PRO.value)
+                        atari_pro_removed = True
+
+            if atari_pro_removed:
+                break
+
         available_envs = [
             {"name": name, "agents": cfg.agents}
             for name, cfg in ENVIRONMENTS.items()
-            if not any(session.env_config.name == cfg.name for session in client_sessions.values())
+            if name not in used_env_names
         ]
-    return available_envs, [pt.value for pt in PlayerType]
+    return available_envs, available_players

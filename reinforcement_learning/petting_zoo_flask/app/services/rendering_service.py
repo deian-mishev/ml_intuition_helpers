@@ -3,7 +3,6 @@ import base64
 import cv2
 
 def render_frame(session: SessionState) -> str:
-    with session.lock:
-        frame = session.env.render()
+    frame = session.env.render()
     _, buffer = cv2.imencode('.png', frame)
     return base64.b64encode(buffer).decode('utf-8')
