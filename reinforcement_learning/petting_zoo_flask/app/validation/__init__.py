@@ -38,7 +38,6 @@ def validate_env_players_comb(env_name, allowed_types, players):
         return False, "Player count mismatch"
 
     human_seen = False
-    atari_pro_seen = False
     for agent in env_cfg.agents:
         if agent not in players_val_response:
             return False, f"Missing agent: {agent}"
